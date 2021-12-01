@@ -10,31 +10,26 @@ fn main() {
     println!("Day b result is {}", ret_b);
 }
 
-fn calculate_day_a(data: &[usize]) -> usize {
+fn calculate_num_increases_any_gap(data: &[usize], gap: usize) -> usize {
+    // Calculate how many increases there are in the data, from points a to points a + gap.
     let mut count = 0;
-    let mut prev = data[0];
-    for datum in data[1..].iter() {
-        if datum > &prev {
+    for (datum, prev) in Iterator::zip(data[gap..].iter(), data[..data.len() - gap].iter()) {
+        if datum > prev {
             count += 1;
         }
-        prev = *datum;
     }
     count
+}
+
+fn calculate_day_a(data: &[usize]) -> usize {
+    calculate_num_increases_any_gap(data, 1)
 }
 
 fn calculate_day_b(data: &[usize]) -> usize {
     // Although we are supposed to be comparing sums of a sliding window
     // in actuality sum (a b c) compared to sum (b c d) just means you have
     // to compare d vs a, so the main issue is keeping track of the last 3 data points
-    let mut prev: Vec<usize> = data[0..3].to_vec();
-    let mut count = 0;
-    for datum in data[3..].iter() {
-        if datum > &prev[0] {
-            count += 1;
-        }
-        prev = vec![prev[1], prev[2], *datum];
-    }
-    count
+    calculate_num_increases_any_gap(data, 3)
 }
 
 #[cfg(test)]
