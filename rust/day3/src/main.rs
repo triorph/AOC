@@ -1,10 +1,11 @@
 extern crate peg;
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum BinaryValue {
     One,
     Zero,
 }
 
+#[derive(Clone)]
 struct DiagnosticReport {
     binary_values: Vec<Vec<BinaryValue>>,
 }
@@ -42,7 +43,7 @@ impl DiagnosticReport {
         }
         DiagnosticReport { binary_values }
     }
-    fn find_bits_matching_value(
+    fn count_bits_matching_value(
         self: &DiagnosticReport,
         bit_index: usize,
         value_to_match: BinaryValue,
@@ -59,41 +60,25 @@ impl DiagnosticReport {
             .sum();
         (num_not_matching, num_matching)
     }
-    fn filter_by_char_at_bit(
+    fn filter_to_bits_matching_value(
         self: &mut DiagnosticReport,
         bit_index: usize,
         value_to_match: &BinaryValue,
     ) {
+        // Rewrites the objects binary_values, meaning this method consumes the object somewhat.
         if self.binary_values.len() > 1 {
             self.binary_values = self
-                .copy_binary_values()
+                .binary_values
+                .clone()
                 .into_iter()
                 .filter(|line| line[bit_index] == *value_to_match)
                 .collect();
         };
     }
 
-    fn copy_binary_values(self: &DiagnosticReport) -> Vec<Vec<BinaryValue>> {
-        self.binary_values
-            .iter()
-            .map(|line| {
-                line.iter()
-                    .map(|value| match value {
-                        BinaryValue::One => BinaryValue::One,
-                        BinaryValue::Zero => BinaryValue::Zero,
-                    })
-                    .collect()
-            })
-            .collect()
-    }
-
-    fn copy(self: &DiagnosticReport) -> DiagnosticReport {
-        DiagnosticReport {
-            binary_values: self.copy_binary_values(),
-        }
-    }
-
     fn filter_down_most_common(self: &mut DiagnosticReport, oxygen: bool) -> usize {
+        // filter_to_bits_matching_value consumes the self value, so this method does too.
+        // It is worth cloning the object before you call this method if you want to reuse it later.
         let mut ret: usize = 0;
         let (value_to_match, value_to_not_match, match_increase, not_match_increase) = match oxygen
         {
@@ -104,13 +89,13 @@ impl DiagnosticReport {
             ret *= 2;
             if self.binary_values.len() > 1 {
                 let (num_not_match, num_match) =
-                    self.find_bits_matching_value(bit_index, BinaryValue::One);
+                    self.count_bits_matching_value(bit_index, BinaryValue::One);
                 if num_match >= num_not_match {
                     ret += match_increase;
-                    self.filter_by_char_at_bit(bit_index, &value_to_match);
+                    self.filter_to_bits_matching_value(bit_index, &value_to_match);
                 } else {
                     ret += not_match_increase;
-                    self.filter_by_char_at_bit(bit_index, &value_to_not_match);
+                    self.filter_to_bits_matching_value(bit_index, &value_to_not_match);
                 }
             } else if self.binary_values[0][bit_index] == BinaryValue::One {
                 ret += 1;
@@ -124,7 +109,7 @@ impl DiagnosticReport {
         for bit_index in 0..self.binary_values[0].len() {
             gamma *= 2;
             epsilon *= 2;
-            let (num_0, num_1) = self.find_bits_matching_value(bit_index, BinaryValue::One);
+            let (num_0, num_1) = self.count_bits_matching_value(bit_index, BinaryValue::One);
             if num_1 > num_0 {
                 gamma += 1;
             } else {
@@ -134,8 +119,9 @@ impl DiagnosticReport {
         epsilon * gamma
     }
     fn calculate_day_b(self: &DiagnosticReport) -> usize {
-        let oxygen_rating = self.copy().filter_down_most_common(true);
-        let co2_scrubber_rating = self.copy().filter_down_most_common(false);
+        // Since filter_down_most_common consumes the object, we want to clone it first.
+        let oxygen_rating = self.clone().filter_down_most_common(true);
+        let co2_scrubber_rating = self.clone().filter_down_most_common(false);
         oxygen_rating * co2_scrubber_rating
     }
 }
