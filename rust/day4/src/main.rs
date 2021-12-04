@@ -56,14 +56,23 @@ impl BingoBoard {
         }
         BingoBoard { values: ret }
     }
+    fn get_found_mask_line(current_bingo_numbers: &[usize], bingo_line: &[usize; 5]) -> [bool; 5] {
+        bingo_line
+            .iter()
+            .map(|bingo_number| current_bingo_numbers.contains(bingo_number))
+            .collect::<Vec<bool>>()
+            .try_into()
+            .unwrap()
+    }
 
     fn get_found_mask(self: &BingoBoard, current_bingo_numbers: &[usize]) -> BingoMask {
-        let mut values = [[true; 5]; 5];
-        for i in 0..5 {
-            for j in 0..5 {
-                values[i][j] = current_bingo_numbers.contains(&self.values[i][j]);
-            }
-        }
+        let values: [[bool; 5]; 5] = self
+            .values
+            .iter()
+            .map(|bingo_line| BingoBoard::get_found_mask_line(current_bingo_numbers, bingo_line))
+            .collect::<Vec<[bool; 5]>>()
+            .try_into()
+            .unwrap();
         BingoMask { values }
     }
 
@@ -130,31 +139,28 @@ impl BingoSetup {
         panic!("No bingo result found");
     }
 
-    fn get_excluded_bingo_boards(
+    fn filter_out_won_boards(
         bingo_boards: Vec<BingoBoard>,
-        bingo_board_to_exclude: &BingoBoard,
+        current_bingo_numbers: &[usize],
     ) -> Vec<BingoBoard> {
         bingo_boards
             .into_iter()
-            .filter(|board| board != bingo_board_to_exclude)
+            .filter(|board| board.get_victory_score(current_bingo_numbers).is_none())
             .collect()
     }
 
     fn calculate_day_b(self: &BingoSetup) -> usize {
-        let mut unwon_bingo_boards;
-        let mut next_bingo_boards = self.bingo_boards.clone();
+        let mut unwon_bingo_boards = self.bingo_boards.clone();
         for i in 1..=self.bingo_numbers.len() {
             let current_bingo_numbers = &self.bingo_numbers[0..i];
-            unwon_bingo_boards = next_bingo_boards.clone();
-            for bingo_board in unwon_bingo_boards.iter() {
-                if let Some(result) = bingo_board.get_victory_score(current_bingo_numbers) {
-                    if next_bingo_boards.len() == 1 {
-                        return result;
-                    } else {
-                        next_bingo_boards =
-                            BingoSetup::get_excluded_bingo_boards(next_bingo_boards, bingo_board);
-                    }
+            if unwon_bingo_boards.len() == 1 {
+                if let Some(result) = unwon_bingo_boards[0].get_victory_score(current_bingo_numbers)
+                {
+                    return result;
                 }
+            } else {
+                unwon_bingo_boards =
+                    BingoSetup::filter_out_won_boards(unwon_bingo_boards, current_bingo_numbers);
             }
         }
         panic!("No bingo result found");
