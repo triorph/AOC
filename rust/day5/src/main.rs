@@ -1,9 +1,7 @@
 extern crate peg;
-use std::cmp::max;
-use std::cmp::min;
 use std::collections::HashMap;
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, PartialOrd, Ord)]
 pub struct Point {
     x: usize,
     y: usize,
@@ -64,19 +62,29 @@ impl VentLayout {
 }
 
 impl VentLine {
+    fn get_x_points(self: &VentLine) -> Vec<usize> {
+        match self.end.x < self.start.x {
+            true => (self.end.x..=self.start.x).rev().collect::<Vec<usize>>(),
+            false => (self.start.x..=self.end.x).collect::<Vec<usize>>(),
+        }
+    }
+
+    fn get_y_points(self: &VentLine) -> Vec<usize> {
+        match self.end.y < self.start.y {
+            true => (self.end.y..=self.start.y).rev().collect::<Vec<usize>>(),
+            false => (self.start.y..=self.end.y).collect::<Vec<usize>>(),
+        }
+    }
+
     fn is_vertical(self: &VentLine) -> bool {
         self.start.x == self.end.x
     }
 
     fn get_vertical_points(self: &VentLine) -> Vec<Point> {
-        let mut ret = vec![];
-        let x = self.start.x;
-        let start = min(self.start.y, self.end.y);
-        let end = max(self.start.y, self.end.y);
-        for y in start..=end {
-            ret.push(Point { x, y });
-        }
-        ret
+        std::iter::repeat(self.start.x)
+            .zip(self.get_y_points().into_iter())
+            .map(|(x, y)| Point { x, y })
+            .collect()
     }
 
     fn is_horizontal(self: &VentLine) -> bool {
@@ -84,14 +92,11 @@ impl VentLine {
     }
 
     fn get_horizontal_points(self: &VentLine) -> Vec<Point> {
-        let mut ret = vec![];
-        let y = self.start.y;
-        let start = min(self.start.x, self.end.x);
-        let end = max(self.start.x, self.end.x);
-        for x in start..=end {
-            ret.push(Point { x, y });
-        }
-        ret
+        self.get_x_points()
+            .into_iter()
+            .zip(std::iter::repeat(self.start.y))
+            .map(|(x, y)| Point { x, y })
+            .collect()
     }
 
     fn get_points_from_line_day_a(self: &VentLine) -> Vec<Point> {
@@ -103,25 +108,21 @@ impl VentLine {
             vec![]
         }
     }
+
     fn is_diagonal(self: &VentLine) -> bool {
         (self.end.y as isize - self.start.y as isize).abs()
             == (self.end.x as isize - self.start.x as isize).abs()
     }
 
     fn get_diagonal_points(self: &VentLine) -> Vec<Point> {
-        let mut ret = vec![];
-        let x_vals = match self.end.x < self.start.x {
-            true => (self.end.x..=self.start.x).rev().collect::<Vec<usize>>(),
-            false => (self.start.x..=self.end.x).collect::<Vec<usize>>(),
-        };
-        let y_vals = match self.end.y < self.start.y {
-            true => (self.end.y..=self.start.y).rev().collect::<Vec<usize>>(),
-            false => (self.start.y..=self.end.y).collect::<Vec<usize>>(),
-        };
-        for (x, y) in x_vals.into_iter().zip(y_vals.into_iter()) {
-            ret.push(Point { x, y })
-        }
-        ret
+        let x_vals = self.get_x_points();
+        let y_vals = self.get_y_points();
+        x_vals
+            .into_iter()
+            .zip(y_vals)
+            .into_iter()
+            .map(|(x, y)| Point { x, y })
+            .collect()
     }
 
     fn get_points_from_line_day_b(self: &VentLine) -> Vec<Point> {
@@ -168,14 +169,22 @@ mod test {
             Point { x: 4, y: 6 },
             Point { x: 5, y: 6 },
         ];
-        assert_eq!(vent_line.get_points_from_line_day_a(), expected);
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
+        let mut found = vent_line.get_points_from_line_day_a();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = vent_line.get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
         let vent_line = VentLine {
             start: Point { x: 5, y: 6 },
             end: Point { x: 3, y: 6 },
         };
-        assert_eq!(vent_line.get_points_from_line_day_a(), expected);
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
+        let mut found = vent_line.get_points_from_line_day_a();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = vent_line.get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
     }
 
     #[test]
@@ -189,14 +198,22 @@ mod test {
             Point { x: 3, y: 5 },
             Point { x: 3, y: 6 },
         ];
-        assert_eq!(vent_line.get_points_from_line_day_a(), expected);
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
+        let mut found = vent_line.get_points_from_line_day_a();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = vent_line.get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
         let vent_line = VentLine {
             start: Point { x: 3, y: 6 },
             end: Point { x: 3, y: 4 },
         };
-        assert_eq!(vent_line.get_points_from_line_day_a(), expected);
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
+        let mut found = vent_line.get_points_from_line_day_a();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = vent_line.get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
     }
 
     #[test]
@@ -241,44 +258,40 @@ mod test {
             Point { x: 5, y: 5 },
             Point { x: 6, y: 6 },
         ];
-        let vent_line = VentLine {
+        let mut found = VentLine {
             start: Point { x: 3, y: 3 },
             end: Point { x: 6, y: 6 },
-        };
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
-        let expected = [
-            Point { x: 3, y: 6 },
-            Point { x: 4, y: 5 },
-            Point { x: 5, y: 4 },
-            Point { x: 6, y: 3 },
-        ];
-        let vent_line = VentLine {
-            start: Point { x: 3, y: 6 },
-            end: Point { x: 6, y: 3 },
-        };
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
-        let expected = [
-            Point { x: 6, y: 3 },
-            Point { x: 5, y: 4 },
-            Point { x: 4, y: 5 },
-            Point { x: 3, y: 6 },
-        ];
-        let vent_line = VentLine {
-            start: Point { x: 6, y: 3 },
-            end: Point { x: 3, y: 6 },
-        };
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
-        let expected = [
-            Point { x: 6, y: 6 },
-            Point { x: 5, y: 5 },
-            Point { x: 4, y: 4 },
-            Point { x: 3, y: 3 },
-        ];
-        let vent_line = VentLine {
+        }
+        .get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = VentLine {
             start: Point { x: 6, y: 6 },
             end: Point { x: 3, y: 3 },
-        };
-        assert_eq!(vent_line.get_points_from_line_day_b(), expected);
+        }
+        .get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
+        let expected = [
+            Point { x: 3, y: 6 },
+            Point { x: 4, y: 5 },
+            Point { x: 5, y: 4 },
+            Point { x: 6, y: 3 },
+        ];
+        let mut found = VentLine {
+            start: Point { x: 3, y: 6 },
+            end: Point { x: 6, y: 3 },
+        }
+        .get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
+        let mut found = VentLine {
+            start: Point { x: 6, y: 3 },
+            end: Point { x: 3, y: 6 },
+        }
+        .get_points_from_line_day_b();
+        found.sort();
+        assert_eq!(found, expected);
     }
 
     #[test]
