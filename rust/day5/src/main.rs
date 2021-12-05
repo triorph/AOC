@@ -62,17 +62,17 @@ impl VentLayout {
 }
 
 impl VentLine {
-    fn get_x_points(self: &VentLine) -> Vec<usize> {
+    fn get_x_points(self: &VentLine) -> Box<dyn Iterator<Item = usize>> {
         match self.end.x < self.start.x {
-            true => (self.end.x..=self.start.x).rev().collect::<Vec<usize>>(),
-            false => (self.start.x..=self.end.x).collect::<Vec<usize>>(),
+            true => Box::new((self.end.x..=self.start.x).rev()),
+            false => Box::new(self.start.x..=self.end.x),
         }
     }
 
-    fn get_y_points(self: &VentLine) -> Vec<usize> {
+    fn get_y_points(self: &VentLine) -> Box<dyn Iterator<Item = usize>> {
         match self.end.y < self.start.y {
-            true => (self.end.y..=self.start.y).rev().collect::<Vec<usize>>(),
-            false => (self.start.y..=self.end.y).collect::<Vec<usize>>(),
+            true => Box::new((self.end.y..=self.start.y).rev()),
+            false => Box::new(self.start.y..=self.end.y),
         }
     }
 
@@ -93,7 +93,6 @@ impl VentLine {
 
     fn get_horizontal_points(self: &VentLine) -> Vec<Point> {
         self.get_x_points()
-            .into_iter()
             .zip(std::iter::repeat(self.start.y))
             .map(|(x, y)| Point { x, y })
             .collect()
@@ -117,11 +116,7 @@ impl VentLine {
     fn get_diagonal_points(self: &VentLine) -> Vec<Point> {
         let x_vals = self.get_x_points();
         let y_vals = self.get_y_points();
-        x_vals
-            .into_iter()
-            .zip(y_vals)
-            .map(|(x, y)| Point { x, y })
-            .collect()
+        x_vals.zip(y_vals).map(|(x, y)| Point { x, y }).collect()
     }
 
     fn get_points_from_line_day_b(self: &VentLine) -> Vec<Point> {
