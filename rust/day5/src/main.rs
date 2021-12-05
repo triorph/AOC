@@ -82,7 +82,7 @@ impl VentLine {
 
     fn get_vertical_points(self: &VentLine) -> Vec<Point> {
         std::iter::repeat(self.start.x)
-            .zip(self.get_y_points().into_iter())
+            .zip(self.get_y_points())
             .map(|(x, y)| Point { x, y })
             .collect()
     }
@@ -120,7 +120,6 @@ impl VentLine {
         x_vals
             .into_iter()
             .zip(y_vals)
-            .into_iter()
             .map(|(x, y)| Point { x, y })
             .collect()
     }
