@@ -1,4 +1,6 @@
 extern crate peg;
+use num::BigUint;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum BinaryValue {
     One,
@@ -76,17 +78,17 @@ impl DiagnosticReport {
         };
     }
 
-    fn filter_down_most_common(self: &mut DiagnosticReport, oxygen: bool) -> usize {
+    fn filter_down_most_common(self: &mut DiagnosticReport, oxygen: bool) -> BigUint {
         // filter_to_bits_matching_value consumes the self value, so this method does too.
         // It is worth cloning the object before you call this method if you want to reuse it later.
-        let mut ret: usize = 0;
+        let mut ret: BigUint = BigUint::new(vec![0]);
         let (value_to_match, value_to_not_match, match_increase, not_match_increase) = match oxygen
         {
-            true => (BinaryValue::One, BinaryValue::Zero, 1, 0),
-            false => (BinaryValue::Zero, BinaryValue::One, 0, 1),
+            true => (BinaryValue::One, BinaryValue::Zero, 1_usize, 0_usize),
+            false => (BinaryValue::Zero, BinaryValue::One, 0_usize, 1_usize),
         };
         for bit_index in 0..self.binary_values[0].len() {
-            ret *= 2;
+            ret *= 2_usize;
             if self.binary_values.len() > 1 {
                 let (num_not_match, num_match) =
                     self.count_bits_matching_value(bit_index, BinaryValue::One);
@@ -98,27 +100,27 @@ impl DiagnosticReport {
                     self.filter_to_bits_matching_value(bit_index, &value_to_not_match);
                 }
             } else if self.binary_values[0][bit_index] == BinaryValue::One {
-                ret += 1;
+                ret += 1_usize;
             }
         }
         ret
     }
-    fn calculate_day_a(self: &DiagnosticReport) -> usize {
-        let mut gamma = 0; // most common bits
-        let mut epsilon = 0; // least common bits
+    fn calculate_day_a(self: &DiagnosticReport) -> BigUint {
+        let mut gamma = BigUint::new(vec![0]); // most common bits
+        let mut epsilon = BigUint::new(vec![0]); //least common bits
         for bit_index in 0..self.binary_values[0].len() {
-            gamma *= 2;
-            epsilon *= 2;
+            gamma *= 2_usize;
+            epsilon *= 2_usize;
             let (num_0, num_1) = self.count_bits_matching_value(bit_index, BinaryValue::One);
             if num_1 > num_0 {
-                gamma += 1;
+                gamma += 1_usize;
             } else {
-                epsilon += 1;
+                epsilon += 1_usize;
             }
         }
         epsilon * gamma
     }
-    fn calculate_day_b(self: &DiagnosticReport) -> usize {
+    fn calculate_day_b(self: &DiagnosticReport) -> BigUint {
         // Since filter_down_most_common consumes the object, we want to clone it first.
         let oxygen_rating = self.clone().filter_down_most_common(true);
         let co2_scrubber_rating = self.clone().filter_down_most_common(false);
@@ -127,7 +129,7 @@ impl DiagnosticReport {
 }
 
 fn main() {
-    let report = DiagnosticReport::new(include_str!("../input_data.txt").lines());
+    let report = DiagnosticReport::new(include_str!("../big_data.txt").lines());
     let day_a = report.calculate_day_a();
     println!("Day a result: {}", day_a);
     let day_b = report.calculate_day_b();
