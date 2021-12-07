@@ -44,8 +44,8 @@ impl Iterator for LanternFishIterator {
 }
 
 impl LanternFishState {
-    fn new(vent_layout_input_str: &str) -> LanternFishState {
-        day6_parser::parse(vent_layout_input_str).unwrap()
+    fn new(lantern_fish_state_input_str: &str) -> LanternFishState {
+        day6_parser::parse(lantern_fish_state_input_str).unwrap()
     }
 
     fn get_after_n_iterations(self: &LanternFishState, n: usize) -> LanternFishState {
