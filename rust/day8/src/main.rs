@@ -12,7 +12,7 @@ enum DigitSegment {
     G, // bottom-horizontal
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq)]
 enum DigitValue {
     Unknown,
     One,
@@ -153,6 +153,30 @@ impl DigitValue {
                 DigitSegment::F,
                 DigitSegment::G,
             ],
+            DigitValue::Zero => vec![
+                DigitSegment::A,
+                DigitSegment::B,
+                DigitSegment::C,
+                DigitSegment::E,
+                DigitSegment::F,
+                DigitSegment::G,
+            ],
+        }
+    }
+
+    fn to_usize(self: &DigitValue) -> usize {
+        match self {
+            DigitValue::Zero => 0,
+            DigitValue::One => 1,
+            DigitValue::Two => 2,
+            DigitValue::Three => 3,
+            DigitValue::Four => 4,
+            DigitValue::Five => 5,
+            DigitValue::Six => 6,
+            DigitValue::Seven => 7,
+            DigitValue::Eight => 8,
+            DigitValue::Nine => 9,
+            DigitValue::Unknown => panic!("Cannot find value"),
         }
     }
 }
@@ -172,21 +196,65 @@ impl Digit {
 
     fn filter_down_possibilities(
         self: &Digit,
-        possibilities: &mut HashMap<DigitValue, Vec<DigitValue>>,
-        outputs: Vec<DigitValue>,
+        possibilities: &mut HashMap<DigitSegment, Vec<DigitSegment>>,
+        outputs: Vec<DigitSegment>,
     ) {
-        for digit in self.input_segments.iter() {
-            let entry = possibilities.entry(*digit).unwrap();
-            entry = entry
-                .iter()
-                .filter(|possible_value| outputs.contains(possible_value))
-                .collect();
+        for digit_segment in DigitSegment::all_segments().iter() {
+            let entry = possibilities
+                .entry(digit_segment.clone())
+                .or_insert(DigitSegment::all_segments().to_vec());
+            *entry = entry
+                .into_iter()
+                .filter(|possible_value| {
+                    if self.input_segments.contains(digit_segment) {
+                        outputs.contains(possible_value)
+                    } else {
+                        !outputs.contains(possible_value)
+                    }
+                })
+                .map(|digit_segment| digit_segment.clone())
+                .collect::<Vec<DigitSegment>>();
         }
+    }
+
+    fn determine_if_two_three_or_five(
+        self: &Digit,
+        possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
+    ) -> DigitValue {
+        let mut possible_values = vec![];
+        for digit_segment in &self.input_segments[..] {
+            for output_digit_segment in &possibilities[digit_segment][..] {
+                if !possible_values.contains(output_digit_segment) {
+                    possible_values.push(output_digit_segment.clone());
+                }
+            }
+        }
+        if !possible_values.contains(&DigitSegment::C) {
+            // Only 5s don't have segment C
+            DigitValue::Five
+        } else if !possible_values.contains(&DigitSegment::B)
+            && !possible_values.contains(&DigitSegment::E)
+        {
+            DigitValue::Three
+        } else if !possible_values.contains(&DigitSegment::C)
+            && !possible_values.contains(&DigitSegment::E)
+        {
+            DigitValue::Two
+        } else {
+            DigitValue::Unknown
+        }
+    }
+
+    fn determine_if_zero_six_or_nine(
+        self: &Digit,
+        possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
+    ) -> DigitValue {
+        DigitValue::Unknown
     }
 
     fn update_possibilities(
         self: &mut Digit,
-        possibilities: &mut HashMap<DigitValue, Vec<DigitValue>>,
+        possibilities: &mut HashMap<DigitSegment, Vec<DigitSegment>>,
     ) {
         if self.input_segments.len() == 2 {
             self.digit_value = DigitValue::One;
@@ -198,11 +266,13 @@ impl Digit {
             self.digit_value = DigitValue::Eight;
         } else if self.input_segments.len() == 5 {
             //possible options are 2, 3, 5
+            self.digit_value = self.determine_if_two_three_or_five(possibilities);
         } else if self.input_segments.len() == 6 {
             // possible options are 0, 6, 9
+            self.digit_value = self.determine_if_zero_six_or_nine(possibilities);
         }
         let outputs = self.digit_value.get_outputs_for_type();
-        self.filter_down_possibilities(outputs);
+        self.filter_down_possibilities(possibilities, outputs);
     }
 }
 
@@ -214,14 +284,34 @@ impl DigitLine {
             .count()
     }
 
+    fn output_not_found(self: &DigitLine) -> bool {
+        self.output_digits
+            .iter()
+            .filter(|digit| digit.digit_value == DigitValue::Unknown)
+            .count()
+            > 0
+    }
+
+    fn build_output_number(self: &DigitLine) -> usize {
+        self.output_digits.iter().fold(0_usize, |acc, digit| {
+            acc * 10 + digit.digit_value.to_usize()
+        })
+    }
+
     fn calculate_output(self: &mut DigitLine) -> usize {
         let mut digit_possibilities: HashMap<DigitSegment, Vec<DigitSegment>> = HashMap::new();
         for digit in DigitSegment::all_segments().into_iter() {
             digit_possibilities.insert(digit, DigitSegment::all_segments().to_vec());
         }
-        for digit in self.input_digits.iter() {
-            digit.update_possibilities(digit_possibilities)
+        while self.output_not_found() {
+            for mut digit in &mut self.input_digits[..] {
+                digit.update_possibilities(&mut digit_possibilities)
+            }
+            for mut digit in &mut self.output_digits[..] {
+                digit.update_possibilities(&mut digit_possibilities)
+            }
         }
+        self.build_output_number()
     }
 }
 
