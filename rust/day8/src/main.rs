@@ -199,16 +199,11 @@ impl Digit {
         possibilities: &mut HashMap<DigitSegment, Vec<DigitSegment>>,
         outputs: Vec<DigitSegment>,
     ) {
-        println!(
-            "Filtering down possibilities, starting with {:?} {:?}",
-            possibilities, outputs
-        );
         if self.input_segments.len() == outputs.len() {
             for digit_segment in DigitSegment::all_segments().iter() {
                 let entry = possibilities
                     .entry(digit_segment.clone())
                     .or_insert_with(|| DigitSegment::all_segments().to_vec());
-                println!("possibilities for {:?} were {:?}", digit_segment, *entry);
                 *entry = entry
                     .iter_mut()
                     .filter(|possible_value| {
@@ -220,7 +215,6 @@ impl Digit {
                     })
                     .map(|digit_segment| digit_segment.clone())
                     .collect::<Vec<DigitSegment>>();
-                println!("Possibilities for {:?} are {:?}", digit_segment, *entry);
             }
         }
     }
@@ -244,10 +238,6 @@ impl Digit {
         possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
     ) -> DigitValue {
         let possible_values = self.build_possible_values(possibilities);
-        println!(
-            "Testing for 2,3,5 with possible values: {:?} -> {:?}",
-            self.input_segments, possible_values
-        );
         if !possible_values.contains(&DigitSegment::C) {
             DigitValue::Five
         } else if !possible_values.contains(&DigitSegment::B)
@@ -268,10 +258,6 @@ impl Digit {
         possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
     ) -> DigitValue {
         let possible_values = self.build_possible_values(possibilities);
-        println!(
-            "Testing for 0,6,9 with possible values: {:?} -> {:?}",
-            self.input_segments, possible_values
-        );
         if !possible_values.contains(&DigitSegment::D) {
             DigitValue::Zero
         } else if !possible_values.contains(&DigitSegment::E) {
@@ -400,6 +386,7 @@ impl DigitLine {
             digit_possibilities.insert(digit, DigitSegment::all_segments().to_vec());
         }
         self.update_possibilities_for_len_5_digits(&mut digit_possibilities);
+        self.update_possibilities_for_len_6_digits(&mut digit_possibilities);
 
         while self.output_not_found() {
             for digit in &mut self.input_digits[..] {
@@ -546,6 +533,6 @@ mod test {
     #[test]
     fn test_day_b() {
         let mut digit_setup = DigitSetup::new(include_str!("../test_data.txt"));
-        assert_eq!(digit_setup.calculate_day_b(), 61229);
+        assert_eq!(digit_setup.calculate_day_b(), 61229 + 5353);
     }
 }
