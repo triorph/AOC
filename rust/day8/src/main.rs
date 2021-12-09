@@ -75,7 +75,7 @@ impl DigitSegment {
     }
 
     fn all_segments() -> [DigitSegment; 7] {
-        return [
+        [
             DigitSegment::A,
             DigitSegment::B,
             DigitSegment::C,
@@ -83,7 +83,7 @@ impl DigitSegment {
             DigitSegment::E,
             DigitSegment::F,
             DigitSegment::G,
-        ];
+        ]
     }
 }
 
@@ -199,28 +199,35 @@ impl Digit {
         possibilities: &mut HashMap<DigitSegment, Vec<DigitSegment>>,
         outputs: Vec<DigitSegment>,
     ) {
-        for digit_segment in DigitSegment::all_segments().iter() {
-            let entry = possibilities
-                .entry(digit_segment.clone())
-                .or_insert(DigitSegment::all_segments().to_vec());
-            *entry = entry
-                .into_iter()
-                .filter(|possible_value| {
-                    if self.input_segments.contains(digit_segment) {
-                        outputs.contains(possible_value)
-                    } else {
-                        !outputs.contains(possible_value)
-                    }
-                })
-                .map(|digit_segment| digit_segment.clone())
-                .collect::<Vec<DigitSegment>>();
+        println!(
+            "Filtering down possibilities, starting with {:?} {:?}",
+            possibilities, outputs
+        );
+        if self.input_segments.len() == outputs.len() {
+            for digit_segment in DigitSegment::all_segments().iter() {
+                let entry = possibilities
+                    .entry(digit_segment.clone())
+                    .or_insert_with(|| DigitSegment::all_segments().to_vec());
+                println!("possibilities for {:?} were {:?}", digit_segment, *entry);
+                *entry = entry
+                    .iter_mut()
+                    .filter(|possible_value| {
+                        if self.input_segments.contains(digit_segment) {
+                            outputs.contains(possible_value)
+                        } else {
+                            !outputs.contains(possible_value)
+                        }
+                    })
+                    .map(|digit_segment| digit_segment.clone())
+                    .collect::<Vec<DigitSegment>>();
+                println!("Possibilities for {:?} are {:?}", digit_segment, *entry);
+            }
         }
     }
-
-    fn determine_if_two_three_or_five(
+    fn build_possible_values(
         self: &Digit,
         possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
-    ) -> DigitValue {
+    ) -> Vec<DigitSegment> {
         let mut possible_values = vec![];
         for digit_segment in &self.input_segments[..] {
             for output_digit_segment in &possibilities[digit_segment][..] {
@@ -229,15 +236,26 @@ impl Digit {
                 }
             }
         }
+        possible_values
+    }
+
+    fn determine_if_two_three_or_five(
+        self: &Digit,
+        possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
+    ) -> DigitValue {
+        let possible_values = self.build_possible_values(possibilities);
+        println!(
+            "Testing for 2,3,5 with possible values: {:?} -> {:?}",
+            self.input_segments, possible_values
+        );
         if !possible_values.contains(&DigitSegment::C) {
-            // Only 5s don't have segment C
             DigitValue::Five
         } else if !possible_values.contains(&DigitSegment::B)
             && !possible_values.contains(&DigitSegment::E)
         {
             DigitValue::Three
-        } else if !possible_values.contains(&DigitSegment::C)
-            && !possible_values.contains(&DigitSegment::E)
+        } else if !possible_values.contains(&DigitSegment::B)
+            && !possible_values.contains(&DigitSegment::F)
         {
             DigitValue::Two
         } else {
@@ -249,27 +267,42 @@ impl Digit {
         self: &Digit,
         possibilities: &HashMap<DigitSegment, Vec<DigitSegment>>,
     ) -> DigitValue {
-        DigitValue::Unknown
+        let possible_values = self.build_possible_values(possibilities);
+        println!(
+            "Testing for 0,6,9 with possible values: {:?} -> {:?}",
+            self.input_segments, possible_values
+        );
+        if !possible_values.contains(&DigitSegment::D) {
+            DigitValue::Zero
+        } else if !possible_values.contains(&DigitSegment::E) {
+            DigitValue::Nine
+        } else if !possible_values.contains(&DigitSegment::C) {
+            DigitValue::Six
+        } else {
+            DigitValue::Unknown
+        }
     }
 
     fn update_possibilities(
         self: &mut Digit,
         possibilities: &mut HashMap<DigitSegment, Vec<DigitSegment>>,
     ) {
-        if self.input_segments.len() == 2 {
-            self.digit_value = DigitValue::One;
-        } else if self.input_segments.len() == 3 {
-            self.digit_value = DigitValue::Seven;
-        } else if self.input_segments.len() == 4 {
-            self.digit_value = DigitValue::Four;
-        } else if self.input_segments.len() == 7 {
-            self.digit_value = DigitValue::Eight;
-        } else if self.input_segments.len() == 5 {
-            //possible options are 2, 3, 5
-            self.digit_value = self.determine_if_two_three_or_five(possibilities);
-        } else if self.input_segments.len() == 6 {
-            // possible options are 0, 6, 9
-            self.digit_value = self.determine_if_zero_six_or_nine(possibilities);
+        if self.digit_value == DigitValue::Unknown {
+            if self.input_segments.len() == 2 {
+                self.digit_value = DigitValue::One;
+            } else if self.input_segments.len() == 3 {
+                self.digit_value = DigitValue::Seven;
+            } else if self.input_segments.len() == 4 {
+                self.digit_value = DigitValue::Four;
+            } else if self.input_segments.len() == 7 {
+                self.digit_value = DigitValue::Eight;
+            } else if self.input_segments.len() == 5 {
+                //possible options are 2, 3, 5
+                self.digit_value = self.determine_if_two_three_or_five(possibilities);
+            } else if self.input_segments.len() == 6 {
+                // possible options are 0, 6, 9
+                self.digit_value = self.determine_if_zero_six_or_nine(possibilities);
+            }
         }
         let outputs = self.digit_value.get_outputs_for_type();
         self.filter_down_possibilities(possibilities, outputs);
@@ -304,10 +337,10 @@ impl DigitLine {
             digit_possibilities.insert(digit, DigitSegment::all_segments().to_vec());
         }
         while self.output_not_found() {
-            for mut digit in &mut self.input_digits[..] {
+            for digit in &mut self.input_digits[..] {
                 digit.update_possibilities(&mut digit_possibilities)
             }
-            for mut digit in &mut self.output_digits[..] {
+            for digit in &mut self.output_digits[..] {
                 digit.update_possibilities(&mut digit_possibilities)
             }
         }
@@ -327,8 +360,11 @@ impl DigitSetup {
             .sum()
     }
 
-    fn calculate_day_b(self: &DigitSetup) -> usize {
-        0
+    fn calculate_day_b(self: &mut DigitSetup) -> usize {
+        self.digit_lines
+            .iter_mut()
+            .map(|digit_line| digit_line.calculate_output())
+            .sum()
     }
 }
 
@@ -336,14 +372,18 @@ fn main() {
     let digit_setup = DigitSetup::new(include_str!("../input_data.txt"));
     let day_a = digit_setup.calculate_day_a();
     println!("Day a result: {}", day_a);
-    let digit_setup = DigitSetup::new(include_str!("../input_data.txt"));
+    let mut digit_setup = DigitSetup::new(include_str!("../input_data.txt"));
     let day_b = digit_setup.calculate_day_b();
     println!("Day b result: {}", day_b);
 }
 
 #[cfg(test)]
 mod test {
+    use crate::Digit;
+    use crate::DigitSegment;
     use crate::DigitSetup;
+    use crate::DigitValue;
+    use std::collections::HashMap;
 
     #[test]
     fn test_parse() {
@@ -383,6 +423,56 @@ mod test {
     }
 
     #[test]
+    fn test_update_possibilities() {
+        let mut digit = Digit {
+            input_segments: vec![DigitSegment::A, DigitSegment::B],
+            digit_value: DigitValue::Unknown,
+        };
+        let mut possibilities: HashMap<DigitSegment, Vec<DigitSegment>> = HashMap::new();
+        for digit_segment in &DigitSegment::all_segments()[..] {
+            possibilities.insert(digit_segment.clone(), DigitSegment::all_segments().to_vec());
+        }
+        digit.update_possibilities(&mut possibilities);
+        assert_eq!(
+            possibilities.get(&DigitSegment::A),
+            Some(&vec![DigitSegment::C, DigitSegment::F])
+        );
+        assert_eq!(
+            possibilities.get(&DigitSegment::B),
+            Some(&vec![DigitSegment::C, DigitSegment::F])
+        );
+        assert_eq!(
+            possibilities.get(&DigitSegment::C),
+            Some(&vec![
+                DigitSegment::A,
+                DigitSegment::B,
+                DigitSegment::D,
+                DigitSegment::E,
+                DigitSegment::G
+            ])
+        );
+    }
+
+    #[test]
+    fn test_update_possibilities_no_change() {
+        let mut digit = Digit {
+            input_segments: DigitValue::Five.get_outputs_for_type(),
+            digit_value: DigitValue::Unknown,
+        };
+        let mut possibilities: HashMap<DigitSegment, Vec<DigitSegment>> = HashMap::new();
+        for digit_segment in &DigitSegment::all_segments()[..] {
+            possibilities.insert(digit_segment.clone(), DigitSegment::all_segments().to_vec());
+        }
+        digit.update_possibilities(&mut possibilities);
+        for digit_segment in &DigitSegment::all_segments()[..] {
+            assert_eq!(
+                possibilities.get(digit_segment),
+                Some(&DigitSegment::all_segments().to_vec())
+            );
+        }
+    }
+
+    #[test]
     fn test_day_a() {
         let digit_setup = DigitSetup::new(include_str!("../test_data.txt"));
         assert_eq!(digit_setup.calculate_day_a(), 26);
@@ -390,7 +480,7 @@ mod test {
 
     #[test]
     fn test_day_b() {
-        let digit_setup = DigitSetup::new(include_str!("../test_data.txt"));
+        let mut digit_setup = DigitSetup::new(include_str!("../test_data.txt"));
         assert_eq!(digit_setup.calculate_day_b(), 61229);
     }
 }
