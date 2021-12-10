@@ -11,6 +11,7 @@ impl SyntaxLines {
             syntax_lines: input.lines().map(String::from).collect::<Vec<String>>(),
         }
     }
+
     fn find_first_invalid_char(line: &str) -> (Option<char>, Vec<char>) {
         let mut stack = vec![];
         for c in line.chars() {
@@ -31,7 +32,7 @@ impl SyntaxLines {
         (None, stack)
     }
 
-    fn turn_missing_char_to_score(c: Option<char>) -> usize {
+    fn turn_missing_char_to_score_a(c: Option<char>) -> usize {
         match c {
             Some(')') => 3,
             Some(']') => 57,
@@ -45,7 +46,7 @@ impl SyntaxLines {
         self.syntax_lines
             .iter()
             .map(|line| SyntaxLines::find_first_invalid_char(&line[..]))
-            .map(|(c, _)| SyntaxLines::turn_missing_char_to_score(c))
+            .map(|(c, _)| SyntaxLines::turn_missing_char_to_score_a(c))
             .sum()
     }
     fn turn_char_to_score_b(c: char) -> usize {
