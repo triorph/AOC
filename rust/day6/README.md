@@ -11,3 +11,6 @@ Iteration 2: [b, c, d, e, f, g + a, h, a]
 
 Day a) How many lantern fish are there after 80 days
 Day b) How many lantern fish are there after 256 days
+
+Apparently a lot of people had problems with this, but the simple model we used above makes both trivially easy to perform, with the only issue
+being the size of the numbers growing beyond 32-bit / 64-bit.
