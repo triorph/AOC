@@ -87,9 +87,6 @@ mod test {
     }
 
     #[test]
-    fn test_get_next_state() {}
-
-    #[test]
     fn test_fuel_used_per_distance_day_a() {
         let crab_setup = CrabSetup::new(include_str!("../test_data.txt"));
         assert_eq!(crab_setup.get_fuel_used_for_location_day_a(1), 41);
