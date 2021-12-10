@@ -8,10 +8,7 @@ struct SyntaxLines {
 impl SyntaxLines {
     fn new(input: &str) -> SyntaxLines {
         SyntaxLines {
-            syntax_lines: input
-                .lines()
-                .map(|val| String::from(val))
-                .collect::<Vec<String>>(),
+            syntax_lines: input.lines().map(String::from).collect::<Vec<String>>(),
         }
     }
     fn find_first_invalid_char(line: &str) -> (Option<char>, Vec<char>) {
@@ -84,8 +81,7 @@ impl SyntaxLines {
         line.into_iter()
             .rev()
             .map(SyntaxLines::get_reverse_bracket)
-            .filter(Option::is_some)
-            .map(Option::unwrap)
+            .flatten()
             .collect::<String>()
     }
 
