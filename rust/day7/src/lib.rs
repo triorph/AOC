@@ -1,7 +1,6 @@
 extern crate peg;
 use std::cmp;
 
-#[derive(Clone)]
 pub struct CrabSetup {
     crab_locations: Vec<usize>,
 }

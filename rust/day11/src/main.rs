@@ -1,4 +1,4 @@
-use day7::CrabSetup;
+use day11::CrabSetup;
 use std::fs::File;
 use std::io::prelude::*;
 
