@@ -1,8 +1,13 @@
 extern crate peg;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Clone, Debug)]
-struct Path(Vec<String>);
+struct Path {
+    last: String,
+    small_caves_visited: HashSet<String>,
+    small_caves_limit_hit: bool,
+}
 
 pub struct Day12Setup(HashMap<String, Vec<String>>);
 
@@ -25,35 +30,39 @@ peg::parser! { grammar day12_parser() for str {
 
 impl Path {
     fn last(self: &Path) -> &String {
-        &self.0[self.0.len() - 1]
+        &self.last
     }
 
     fn is_finished(self: &Path) -> bool {
-        self.last() == &"end".to_string()
+        &self.last[..] == "end"
     }
 
-    fn day_a_can_visit_node(self: &Path, next_node: &str) -> bool {
-        Path::node_is_major(next_node) || self.is_small_cave_unvisited(next_node)
-    }
-
-    fn day_b_can_visit_node(self: &Path, next_node: &str) -> bool {
+    fn can_visit_node(self: &Path, next_node: &str) -> bool {
         Path::node_is_not_start(next_node)
             && (Path::node_is_major(next_node)
-                || self.is_small_cave_unvisited(next_node)
-                || self.no_small_caves_visited_twice())
+                || !self.has_small_cave_been_visited(next_node)
+                || !self.no_small_caves_visited_twice())
     }
 
-    fn is_small_cave_unvisited(self: &Path, small_cave: &str) -> bool {
-        !self.0.contains(&small_cave.to_string())
+    fn has_small_cave_been_visited(self: &Path, small_cave: &str) -> bool {
+        self.small_caves_visited.contains(&small_cave.to_string())
     }
 
     fn no_small_caves_visited_twice(self: &Path) -> bool {
-        for small_node in self.0.iter().filter(|node| !Path::node_is_major(node)) {
-            if self.0.iter().filter(|node| node == &small_node).count() > 1 {
-                return false;
-            }
+        self.small_caves_limit_hit
+    }
+
+    fn insert(self: &mut Path, node: String) {
+        if !self.small_caves_limit_hit
+            && !Path::node_is_major(&node)
+            && self.has_small_cave_been_visited(&node)
+        {
+            self.small_caves_limit_hit = true;
         }
-        true
+        if !Path::node_is_major(&node) {
+            self.small_caves_visited.insert(node.clone());
+        }
+        self.last = node;
     }
 
     fn node_is_not_start(node: &str) -> bool {
@@ -90,7 +99,7 @@ impl Day12Setup {
         Day12Setup(hashmap)
     }
 
-    fn get_available_next_nodes_part_a<'a>(
+    fn get_available_next_nodes<'a>(
         self: &'a Day12Setup,
         path: &'a Path,
     ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
@@ -99,71 +108,42 @@ impl Day12Setup {
                 .get(path.last())
                 .unwrap()
                 .iter()
-                .filter(|node| path.day_a_can_visit_node(node)),
-        )
-    }
-
-    fn get_available_next_nodes_part_b<'a>(
-        self: &'a Day12Setup,
-        path: &'a Path,
-    ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
-        Box::new(
-            self.0
-                .get(path.last())
-                .unwrap()
-                .iter()
-                .filter(|node| path.day_b_can_visit_node(node)),
+                .filter(|node| path.can_visit_node(node)),
         )
     }
 
     fn build_paths_to_goal_part_a(self: &Day12Setup) -> usize {
-        let mut count = 0;
-        let mut current = vec![Path(vec!["start".to_string()])];
-        loop {
-            let mut next = vec![];
-            for path in current.into_iter() {
-                if path.is_finished() {
-                    count += 1;
-                } else {
-                    let neighbours = self.get_available_next_nodes_part_a(&path);
-                    for neighbour in neighbours.into_iter() {
-                        let mut path_2 = path.clone();
-                        path_2.0.push(neighbour.clone());
-                        next.push(path_2);
-                    }
-                }
-            }
-            current = next;
-            if current.is_empty() {
-                break;
-            }
+        let mut path = Path {
+            last: "start".to_string(),
+            small_caves_visited: HashSet::new(),
+            small_caves_limit_hit: true,
+        };
+        path.insert("start".to_string());
+        self.recursively_find_count(path)
+    }
+
+    fn recursively_find_count(self: &Day12Setup, path: Path) -> usize {
+        if path.is_finished() {
+            1
+        } else {
+            self.get_available_next_nodes(&path)
+                .map(|neighbour| {
+                    let mut path = path.clone();
+                    path.insert(neighbour.clone());
+                    self.recursively_find_count(path)
+                })
+                .sum()
         }
-        count
     }
 
     fn build_paths_to_goal_part_b(self: &Day12Setup) -> usize {
-        let mut count = 0;
-        let mut current = vec![Path(vec!["start".to_string()])];
-        loop {
-            let mut next = vec![];
-            for path in current.into_iter() {
-                if path.is_finished() {
-                    count += 1;
-                } else {
-                    let neighbours = self.get_available_next_nodes_part_b(&path);
-                    for neighbour in neighbours.into_iter() {
-                        let mut path_2 = path.clone();
-                        path_2.0.push(neighbour.clone());
-                        next.push(path_2);
-                    }
-                }
-            }
-            current = next;
-            if current.is_empty() {
-                break;
-            }
-        }
-        count
+        let mut path = Path {
+            last: "start".to_string(),
+            small_caves_visited: HashSet::new(),
+            small_caves_limit_hit: false,
+        };
+        path.insert("start".to_string());
+        self.recursively_find_count(path)
     }
 
     /// Calculate the part a response
