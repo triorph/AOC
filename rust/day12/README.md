@@ -16,3 +16,8 @@ list of small caves visited is part of that memoization, which is complicated an
 
 On the plus side, I got to do my first real use of lifetimes to make something work, so still learning something new with Rust every day, and who knows
 how slow this would've run in Python.
+
+Update: Have gone through a few iterations. Went from 52 seconds to 42 by using a DFS instead of BFS, then down to 14 by keeping track of "found"
+storing the small caves to a hashset. Then lastly I got rid of having different path objects altogether, and created a PathExploreState instead,
+which increases and then backtracks the small caves visit count (and the cave limit variable, and last seen node) without having to repeatedly
+call path.clone(). This has taken it down to 2 seconds (or 0.17s with --release)
