@@ -90,82 +90,90 @@ impl Day12Setup {
         Day12Setup(hashmap)
     }
 
-    fn get_available_next_nodes_part_a(self: &Day12Setup, path: &Path) -> Vec<String> {
-        self.0
-            .get(path.last())
-            .unwrap()
-            .clone()
-            .into_iter()
-            .filter(|node| path.day_a_can_visit_node(node))
-            .collect()
+    fn get_available_next_nodes_part_a<'a>(
+        self: &'a Day12Setup,
+        path: &'a Path,
+    ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
+        Box::new(
+            self.0
+                .get(path.last())
+                .unwrap()
+                .iter()
+                .filter(|node| path.day_a_can_visit_node(node)),
+        )
     }
 
-    fn get_available_next_nodes_part_b(self: &Day12Setup, path: &Path) -> Vec<String> {
-        self.0
-            .get(path.last())
-            .unwrap()
-            .clone()
-            .into_iter()
-            .filter(|node| path.day_b_can_visit_node(node))
-            .collect()
+    fn get_available_next_nodes_part_b<'a>(
+        self: &'a Day12Setup,
+        path: &'a Path,
+    ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
+        Box::new(
+            self.0
+                .get(path.last())
+                .unwrap()
+                .iter()
+                .filter(|node| path.day_b_can_visit_node(node)),
+        )
     }
 
-    fn build_paths_to_goal_part_a(self: &Day12Setup) -> Vec<Path> {
+    fn build_paths_to_goal_part_a(self: &Day12Setup) -> usize {
+        let mut count = 0;
         let mut current = vec![Path(vec!["start".to_string()])];
         loop {
             let mut next = vec![];
             for path in current.into_iter() {
                 if path.is_finished() {
-                    next.push(path);
+                    count += 1;
                 } else {
                     let neighbours = self.get_available_next_nodes_part_a(&path);
                     for neighbour in neighbours.into_iter() {
                         let mut path_2 = path.clone();
-                        path_2.0.push(neighbour);
+                        path_2.0.push(neighbour.clone());
                         next.push(path_2);
                     }
                 }
             }
             current = next;
-            if current.iter().filter(|path| path.is_finished()).count() == current.len() {
+            if current.is_empty() {
                 break;
             }
         }
-        current
+        count
     }
 
-    fn build_paths_to_goal_part_b(self: &Day12Setup) -> Vec<Path> {
+    fn build_paths_to_goal_part_b(self: &Day12Setup) -> usize {
+        let mut count = 0;
         let mut current = vec![Path(vec!["start".to_string()])];
         loop {
             let mut next = vec![];
             for path in current.into_iter() {
                 if path.is_finished() {
-                    next.push(path);
+                    count += 1;
                 } else {
                     let neighbours = self.get_available_next_nodes_part_b(&path);
                     for neighbour in neighbours.into_iter() {
                         let mut path_2 = path.clone();
-                        path_2.0.push(neighbour);
+                        path_2.0.push(neighbour.clone());
                         next.push(path_2);
                     }
                 }
             }
             current = next;
-            if current.iter().filter(|path| path.is_finished()).count() == current.len() {
+            if current.is_empty() {
                 break;
             }
         }
-        current
+        count
     }
 
     /// Calculate the part a response
     pub fn calculate_day_a(self: &Day12Setup) -> usize {
-        self.build_paths_to_goal_part_a().len()
+        self.build_paths_to_goal_part_a()
     }
 
     /// Calculate the part b response
     pub fn calculate_day_b(self: &Day12Setup) -> usize {
-        self.build_paths_to_goal_part_b().len()
+        self.build_paths_to_goal_part_b()
     }
 }
 
