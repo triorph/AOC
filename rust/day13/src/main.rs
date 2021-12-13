@@ -10,6 +10,5 @@ fn main() {
     let day_a = day13_setup.calculate_day_a();
     println!("Day a result: {}", day_a);
     let day13_setup = Day13Setup::new(&input_str[..]);
-    let day_b = day13_setup.calculate_day_b();
-    println!("Day b result: {}", day_b);
+    day13_setup.calculate_day_b();
 }
