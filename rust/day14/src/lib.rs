@@ -1,16 +1,18 @@
 extern crate peg;
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct PolymerInsertionRule {
     match_rule: String,
-    replacement: String,
+    rules_updated: [String; 2],
+    char_to_insert: char,
+    rule_count: usize,
 }
 
 #[derive(Clone)]
 pub struct Day14Setup {
-    current_polymer: String,
-    polymer_insertion_rules: Vec<PolymerInsertionRule>,
+    polymer_insertion_rules: HashMap<String, PolymerInsertionRule>,
+    polymer_counts: HashMap<char, usize>,
 }
 
 struct Day14Iterator {
@@ -23,17 +25,57 @@ peg::parser! { grammar day14_parser() for str {
     rule polymer_rule() -> PolymerInsertionRule
         = match_rule:atom() " -> " replace_char:atom() {
             let mut match_chars = match_rule.chars();
-            let replacement: String = [
+            let char_to_insert = replace_char.chars().next().unwrap();
+            let rule_updated_1: String = [
                 match_chars.next().unwrap() ,
-                replace_char.chars().next().unwrap() ,
+                char_to_insert,
             ].iter().collect();
-            PolymerInsertionRule {match_rule, replacement}
+            let rule_updated_2: String = [
+                char_to_insert,
+                match_chars.next().unwrap(),
+            ].iter().collect();
+            PolymerInsertionRule {
+                match_rule,
+                rules_updated: [rule_updated_1, rule_updated_2],
+                rule_count: 0,
+                char_to_insert
+            }
         }
     pub rule parse() -> Day14Setup
         = current_polymer:atom() "\n" * polymer_insertion_rules:polymer_rule() ++ "\n"  "\n" * {
-            Day14Setup {current_polymer, polymer_insertion_rules}
+            let mut rules_map: HashMap<String, PolymerInsertionRule> = HashMap::new();
+            let mut count_map: HashMap<char, usize> = HashMap::new();
+            for mut polymer_insertion_rule in polymer_insertion_rules.into_iter() {
+                polymer_insertion_rule.count_in(&current_polymer[..]);
+                rules_map.insert(polymer_insertion_rule.match_rule.clone(), polymer_insertion_rule);
+            }
+            for c in current_polymer.chars() {
+                *count_map.entry(c).or_insert(0) += 1;
+            }
+            Day14Setup { polymer_insertion_rules: rules_map, polymer_counts: count_map }
         }
 }}
+
+impl PolymerInsertionRule {
+    fn count_in(&mut self, polymer: &str) {
+        let mut count = 0;
+        for i in 0..(polymer.len() - 1) {
+            if polymer[i..i + 2] == self.match_rule[..] {
+                count += 1;
+            }
+        }
+        self.rule_count = count;
+    }
+
+    fn blank() -> PolymerInsertionRule {
+        PolymerInsertionRule {
+            match_rule: "".to_string(),
+            rules_updated: ["foo".to_string(), "bar".to_string()],
+            rule_count: 0,
+            char_to_insert: '\r',
+        }
+    }
+}
 
 impl Iterator for Day14Iterator {
     type Item = Day14Setup;
@@ -54,38 +96,30 @@ impl Day14Setup {
         day14_parser::parse(input_str).unwrap()
     }
 
-    fn find_matching_polymer_insertion_rule(
-        &self,
-        to_match: &str,
-    ) -> Option<&PolymerInsertionRule> {
-        for rule in self.polymer_insertion_rules.iter() {
-            if &rule.match_rule[..] == to_match {
-                return Some(rule);
-            }
-        }
-        None
-    }
-
     fn iterate(self: &Day14Setup) -> Day14Setup {
-        println!("Running an iteration step");
-        let mut next_string = String::new();
-        for i in 0..(self.current_polymer.len() - 1) {
-            let to_match = &self.current_polymer[i..i + 2];
-            if let Some(polymer_insertion_rule) =
-                self.find_matching_polymer_insertion_rule(to_match)
-            {
-                next_string += &polymer_insertion_rule.replacement;
-            } else {
-                next_string += &self.current_polymer[i..i + 1].to_string();
-            }
+        let mut next = self.clone();
+        for polymer_insertion_rule in self.polymer_insertion_rules.values() {
+            (*next
+                .polymer_insertion_rules
+                .entry(polymer_insertion_rule.rules_updated[0].clone())
+                .or_insert_with(PolymerInsertionRule::blank))
+            .rule_count += polymer_insertion_rule.rule_count;
+            (*next
+                .polymer_insertion_rules
+                .entry(polymer_insertion_rule.rules_updated[1].clone())
+                .or_insert_with(PolymerInsertionRule::blank))
+            .rule_count += polymer_insertion_rule.rule_count;
+            (*next
+                .polymer_insertion_rules
+                .entry(polymer_insertion_rule.match_rule.clone())
+                .or_insert_with(PolymerInsertionRule::blank))
+            .rule_count -= polymer_insertion_rule.rule_count;
+            *next
+                .polymer_counts
+                .entry(polymer_insertion_rule.char_to_insert)
+                .or_insert(0) += polymer_insertion_rule.rule_count;
         }
-        next_string += &self.current_polymer
-            [self.current_polymer.len() - 1..self.current_polymer.len()]
-            .to_string();
-        Day14Setup {
-            current_polymer: next_string,
-            polymer_insertion_rules: self.polymer_insertion_rules.clone(),
-        }
+        next
     }
 
     fn iter(self: &Day14Setup) -> Day14Iterator {
@@ -99,12 +133,8 @@ impl Day14Setup {
     }
 
     fn get_max_minus_min(&self) -> usize {
-        let mut counts: HashMap<char, usize> = HashMap::new();
-        for c in self.current_polymer.chars() {
-            *counts.entry(c).or_insert(0) += 1;
-        }
-        let max = counts.values().reduce(std::cmp::max).unwrap();
-        let min = counts.values().reduce(std::cmp::min).unwrap();
+        let max = self.polymer_counts.values().reduce(std::cmp::max).unwrap();
+        let min = self.polymer_counts.values().reduce(std::cmp::min).unwrap();
         max - min
     }
 
@@ -116,7 +146,7 @@ impl Day14Setup {
 
     /// Calculate the part b response
     pub fn calculate_day_b(self: &Day14Setup) -> usize {
-        let state_after_40 = self.iterate_n_times(30);
+        let state_after_40 = self.iterate_n_times(40);
         state_after_40.get_max_minus_min()
     }
 }
@@ -128,28 +158,30 @@ mod test {
     #[test]
     fn test_parse() {
         let day14_setup = Day14Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day14_setup.current_polymer, "NNCB".to_string());
         assert_eq!(day14_setup.polymer_insertion_rules.len(), 16);
+        assert_eq!(day14_setup.polymer_counts.get(&'N').unwrap(), &2);
+        assert_eq!(day14_setup.polymer_counts.get(&'C').unwrap(), &1);
+        assert_eq!(day14_setup.polymer_counts.get(&'B').unwrap(), &1);
     }
 
     #[test]
-    /// Test the iterations needed for day a, give us the string we expect.
-    fn test_iterations_a() {
-        let day14_setup = Day14Setup::new(include_str!("../test_data.txt"));
-        let next = day14_setup.iterate();
-        assert_eq!(next.current_polymer, "NCNBCHB".to_string());
-        let next = day14_setup.iterate_n_times(2);
-        assert_eq!(next.current_polymer, "NBCCNBBBCBHCB".to_string());
-        let next = day14_setup.iterate_n_times(3);
-        assert_eq!(
-            next.current_polymer,
-            "NBBBCNCCNBBNBNBBCHBHHBCHB".to_string()
-        );
-        let next = day14_setup.iterate_n_times(4);
-        assert_eq!(
-            next.current_polymer,
-            "NBBNBNBBCCNBCNCCNBBNBBNBBBNBBNBBCBHCBHHNHCBBCBHCB".to_string()
-        );
+    fn test_1_iteration() {
+        // "NCNBCHB"
+        let after_iteration = Day14Setup::new(include_str!("../test_data.txt")).iterate_n_times(1);
+        assert_eq!(after_iteration.polymer_counts.get(&'N').unwrap(), &2);
+        assert_eq!(after_iteration.polymer_counts.get(&'C').unwrap(), &2);
+        assert_eq!(after_iteration.polymer_counts.get(&'B').unwrap(), &2);
+        assert_eq!(after_iteration.polymer_counts.get(&'H').unwrap(), &1);
+    }
+
+    #[test]
+    fn test_2_iterations() {
+        // "NBCCNBBBCBHCB"
+        let after_iteration = Day14Setup::new(include_str!("../test_data.txt")).iterate_n_times(2);
+        assert_eq!(after_iteration.polymer_counts.get(&'N').unwrap(), &2);
+        assert_eq!(after_iteration.polymer_counts.get(&'C').unwrap(), &4);
+        assert_eq!(after_iteration.polymer_counts.get(&'B').unwrap(), &6);
+        assert_eq!(after_iteration.polymer_counts.get(&'H').unwrap(), &1);
     }
 
     #[test]
