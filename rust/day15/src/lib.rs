@@ -73,7 +73,11 @@ impl Day15Setup {
             let y_val = location.1 as usize % self.lines.len();
             let x_mult = location.0 as usize / self.lines[y_val].len();
             let x_val = location.0 as usize % self.lines[y_val].len();
-            Some((self.lines[y_val][x_val] + y_mult + x_mult) % 10)
+            let mut val = (self.lines[y_val][x_val] + y_mult + x_mult) % 9;
+            if val == 0 {
+                val = 9;
+            }
+            Some(val)
         } else {
             None
         }
@@ -209,6 +213,23 @@ mod test {
             day15_setup.get_value_at_location_day_b(&Point(49, 49)),
             Some(9)
         );
+    }
+
+    #[test]
+    fn test_cumulative_shortest_path_day_b() {
+        let mut day15_setup = Day15Setup::new(include_str!("../test_data.txt"));
+        day15_setup.calculate_day_b();
+        assert_eq!(day15_setup.get_cost_at_location(&Point(0, 9)), &Some(21));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(0, 10)), &Some(23));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(0, 11)), &Some(25));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(0, 12)), &Some(28));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(1, 12)), &Some(30));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(2, 12)), &Some(34));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(2, 13)), &Some(35));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(3, 13)), &Some(40));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(3, 14)), &Some(44));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(3, 15)), &Some(45));
+        assert_eq!(day15_setup.get_cost_at_location(&Point(3, 16)), &Some(46));
     }
 
     #[test]
