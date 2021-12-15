@@ -9,7 +9,7 @@ fn main() {
     let mut day15_setup = Day15Setup::new(&input_str[..]);
     let day_a = day15_setup.calculate_day_a();
     println!("Day a result: {}", day_a);
-    let day15_setup = Day15Setup::new(&input_str[..]);
+    let mut day15_setup = Day15Setup::new(&input_str[..]);
     let day_b = day15_setup.calculate_day_b();
     println!("Day b result: {}", day_b);
 }

@@ -9,7 +9,6 @@ struct Point(isize, isize);
 struct PathExplore {
     cost: usize,
     current_location: Point,
-    path_history: VecDeque<Point>,
 }
 
 pub struct Day15Setup {
@@ -52,13 +51,29 @@ impl Day15Setup {
         day15_parser::parse(input_str).unwrap()
     }
 
-    fn get_value_at_location(&self, location: &Point) -> Option<usize> {
+    fn get_value_at_location_day_a(&self, location: &Point) -> Option<usize> {
         if location.1 >= 0
             && location.1 < self.lines.len() as isize
             && location.0 >= 0
             && location.0 < self.lines[location.1 as usize].len() as isize
         {
             Some(self.lines[location.1 as usize][location.0 as usize])
+        } else {
+            None
+        }
+    }
+
+    fn get_value_at_location_day_b(&self, location: &Point) -> Option<usize> {
+        if location.1 >= 0
+            && location.1 < (self.lines.len() * 5) as isize
+            && location.0 >= 0
+            && location.0 < (self.lines[location.1 as usize % self.lines.len()].len() * 5) as isize
+        {
+            let y_mult = location.1 as usize / self.lines.len();
+            let y_val = location.1 as usize % self.lines.len();
+            let x_mult = location.0 as usize / self.lines[y_val].len();
+            let x_val = location.0 as usize % self.lines[y_val].len();
+            Some((self.lines[y_val][x_val] + y_mult + x_mult) % 10)
         } else {
             None
         }
@@ -73,20 +88,17 @@ impl Day15Setup {
     }
 
     fn set_shortest(&mut self, path: &PathExplore) {
-        *self
-            .shortest
-            .entry(path.current_location.clone())
-            .or_insert(Some(path.cost)) = Some(path.cost);
+        self.shortest
+            .insert(path.current_location.clone(), Some(path.cost));
     }
 
-    fn explore_all_paths_to_target(&mut self) -> usize {
+    fn explore_all_paths_to_target_a(&mut self) -> usize {
         let mut explores = 0;
         let first_path = PathExplore {
             cost: 0,
             current_location: Point(0, 0),
-            path_history: VecDeque::new(),
         };
-        let mut paths = std::collections::VecDeque::new();
+        let mut paths = VecDeque::new();
         paths.push_back(first_path);
         while let Some(path) = paths.pop_front() {
             let location_cost = self.get_cost_at_location(&path.current_location);
@@ -95,13 +107,10 @@ impl Day15Setup {
                 self.set_shortest(&path);
                 let neighbours = path.current_location.get_neighbours();
                 for neighbour in neighbours {
-                    if let Some(value) = self.get_value_at_location(&neighbour) {
-                        let mut next_history = path.path_history.clone();
-                        next_history.push_back(path.current_location.clone());
+                    if let Some(value) = self.get_value_at_location_day_a(&neighbour) {
                         paths.push_back(PathExplore {
                             current_location: neighbour,
                             cost: path.cost + value,
-                            path_history: next_history,
                         })
                     }
                 }
@@ -117,20 +126,57 @@ impl Day15Setup {
             .unwrap()
     }
 
+    fn explore_all_paths_to_target_b(&mut self) -> usize {
+        let mut explores = 0;
+        let first_path = PathExplore {
+            cost: 0,
+            current_location: Point(0, 0),
+        };
+        let mut paths = VecDeque::new();
+        paths.push_back(first_path);
+        while let Some(path) = paths.pop_front() {
+            let location_cost = self.get_cost_at_location(&path.current_location);
+            if location_cost.is_none() || &Some(path.cost) < location_cost {
+                explores += 1;
+                self.set_shortest(&path);
+                let neighbours = path.current_location.get_neighbours();
+                for neighbour in neighbours {
+                    if let Some(value) = self.get_value_at_location_day_b(&neighbour) {
+                        paths.push_back(PathExplore {
+                            current_location: neighbour,
+                            cost: path.cost + value,
+                        })
+                    }
+                }
+            }
+        }
+        let max_y = self.lines.len() * 5 - 1;
+        let max_x = self.lines[0].len() * 5 - 1;
+        println!(
+            "Took {} explores to find the shortest path to all points",
+            explores
+        );
+        println!("Getting cost at point: {} {}", max_x, max_y);
+
+        self.get_cost_at_location(&Point(max_x as isize, max_y as isize))
+            .unwrap()
+    }
+
     /// Calculate the part a response
     pub fn calculate_day_a(&mut self) -> usize {
-        self.explore_all_paths_to_target()
+        self.explore_all_paths_to_target_a()
     }
 
     /// Calculate the part b response
-    pub fn calculate_day_b(&self) -> usize {
-        0
+    pub fn calculate_day_b(&mut self) -> usize {
+        self.explore_all_paths_to_target_b()
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::Day15Setup;
+    use crate::Point;
 
     #[test]
     fn test_parse() {
@@ -145,8 +191,29 @@ mod test {
     }
 
     #[test]
-    fn test_day_b() {
+    fn test_get_value_day_b() {
         let day15_setup = Day15Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day15_setup.calculate_day_b(), 0);
+        assert_eq!(
+            day15_setup.get_value_at_location_day_b(&Point(49, 49)),
+            Some(9)
+        );
+        assert_eq!(
+            day15_setup.get_value_at_location_day_b(&Point(29, 9)),
+            Some(3)
+        );
+        assert_eq!(
+            day15_setup.get_value_at_location_day_b(&Point(50, 49)),
+            None
+        );
+        assert_eq!(
+            day15_setup.get_value_at_location_day_b(&Point(49, 49)),
+            Some(9)
+        );
+    }
+
+    #[test]
+    fn test_day_b() {
+        let mut day15_setup = Day15Setup::new(include_str!("../test_data.txt"));
+        assert_eq!(day15_setup.calculate_day_b(), 315);
     }
 }
