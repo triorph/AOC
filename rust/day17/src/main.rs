@@ -7,8 +7,11 @@ fn main() {
     let mut input_str: String = String::new();
     f.read_to_string(&mut input_str).unwrap();
     let day17_setup = Day17Setup::new(&input_str[..]);
-    let day_a = day17_setup.calculate_day_a();
-    println!("Day a result: {}", day_a);
+    if let Some(day_a) = day17_setup.calculate_day_a() {
+        println!("Day a result: {}", day_a);
+    } else {
+        println!("Unable to calculate day_a result");
+    }
     let day17_setup = Day17Setup::new(&input_str[..]);
     let day_b = day17_setup.calculate_day_b();
     println!("Day b result: {}", day_b);
