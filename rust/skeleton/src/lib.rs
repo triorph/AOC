@@ -40,7 +40,7 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let _octo_setup = Day12Setup::new(include_str!("../test_data.txt"));
+        let _day12_setup = Day12Setup::new(include_str!("../test_data.txt"));
     }
 
     #[test]
