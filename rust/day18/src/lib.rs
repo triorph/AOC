@@ -14,6 +14,12 @@ struct ExplosionRun {
     state: ExplosionState,
 }
 
+struct ExplosionResult<'a> {
+    to_explode: Option<&'a mut SnailNumber>,
+    left: Option<&'a mut SnailNumber>,
+    right: Option<&'a mut SnailNumber>,
+}
+
 #[derive(Clone, PartialEq)]
 pub enum SnailNumber {
     Literal(usize),
@@ -21,6 +27,16 @@ pub enum SnailNumber {
 }
 pub struct Day18Setup {
     snailfish_numbers: Vec<SnailNumber>,
+}
+
+impl<'a> ExplosionResult<'a> {
+    fn none() -> ExplosionResult<'a> {
+        ExplosionResult {
+            to_explode: None,
+            left: None,
+            right: None,
+        }
+    }
 }
 
 impl std::fmt::Debug for SnailNumber {
@@ -199,6 +215,59 @@ impl SnailNumber {
             SnailNumber::Literal(val) => *val,
             SnailNumber::Tuple(left, right) => {
                 3 * left.calculate_magnitude() + 2 * right.calculate_magnitude()
+            }
+        }
+    }
+
+    fn get_leftmost<'a>(&'a mut self) -> &'a mut SnailNumber {
+        match self {
+            SnailNumber::Literal(_) => self,
+            SnailNumber::Tuple(left, _) => left.get_leftmost(),
+        }
+    }
+
+    fn get_rightmost<'a>(&'a mut self) -> &'a mut SnailNumber {
+        match self {
+            SnailNumber::Literal(_) => self,
+            SnailNumber::Tuple(_, right) => right.get_rightmost(),
+        }
+    }
+
+    fn find_literal_pair_to_explode<'a>(&'a mut self, depth: usize) -> ExplosionResult<'a> {
+        match self {
+            &mut SnailNumber::Literal(_) => ExplosionResult::none(),
+            SnailNumber::Tuple(left, right) => {
+                if depth > 3 && left.is_literal_pair() {
+                    ExplosionResult {
+                        to_explode: Some(left),
+                        left: None,
+                        right: Some(right),
+                    }
+                } else if depth > 3 && right.is_literal_pair() {
+                    ExplosionResult {
+                        to_explode: Some(right),
+                        left: Some(left),
+                        right: None,
+                    }
+                } else {
+                    let mut left_ret = left.find_literal_pair_to_explode(depth + 1);
+                    if left_ret.to_explode.is_some() {
+                        if left_ret.right.is_none() {
+                            left_ret.right = Some(right.get_leftmost());
+                        }
+                        left_ret
+                   } else {
+                        let mut right_ret = right.find_literal_pair_to_explode(depth + 1);
+                        if right_ret.to_explode.is_some() {
+                            if right_ret.left.is_none() {
+                                right_ret.left = Some(left.get_rightmost());
+                            }
+                            right_ret
+                        } else {
+                            ExplosionResult::none()
+                        }
+                    }
+                }
             }
         }
     }
