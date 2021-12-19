@@ -125,16 +125,18 @@ impl Scanner {
     }
 
     fn rotate_scanner_and_apply_offset(&self, other: &Scanner) -> Option<Scanner> {
-        for (i, scanner) in other.get_all_scanner_rotations().into_iter().enumerate() {
+        for scanner in other.get_all_scanner_rotations().into_iter() {
             if let Some(diff) = self.find_difference_between_common_points(&scanner) {
-                let p = scanner.beacons[0].clone();
-                let mut ret = scanner.add_point(&diff);
-                /* println!(
-                    "Found distance {:?}, {:?}. built off {:?}, creating point {:?}",
-                    diff, p, self.beacons[0], ret.beacons[0]
-                ); */
-                // ret.offset = ret.offset.add_point(&self.offset);
-                return Some(ret);
+                return Some(scanner.add_point(&diff));
+            }
+        }
+        None
+    }
+
+    fn transform_based_on_good_scanners(&self, others: &[Scanner]) -> Option<Scanner> {
+        for other in others.iter() {
+            if let Some(transformed_scanner) = other.rotate_scanner_and_apply_offset(self) {
+                return Some(transformed_scanner);
             }
         }
         None
@@ -217,24 +219,25 @@ impl Day19Setup {
         day19_parser::parse(input_str).unwrap()
     }
 
+    /// Maps all the scanners ontop of each other, relative to the
+    /// first scanner in the list.
+    ///
+    /// Returns: A new Day19Setup with all the scanners in the correct orientation and position
     pub fn perform_scanner_mapping(self: &Day19Setup) -> Day19Setup {
         let mut transformed_scanners = vec![];
         let mut found: Vec<bool> = vec![false; self.scanners.len()];
         found[0] = true;
         transformed_scanners.push(self.scanners[0].clone());
         while transformed_scanners.len() < self.scanners.len() {
-            for i in 0..self.scanners.len() {
+            for (i, scanner) in self.scanners.iter().enumerate() {
                 if found[i] {
                     continue;
                 }
-                for j in 0..transformed_scanners.len() {
-                    if let Some(transformed_scanner) = (&transformed_scanners[j])
-                        .rotate_scanner_and_apply_offset(&self.scanners[i])
-                    {
-                        transformed_scanners.push(transformed_scanner);
-                        found[i] = true;
-                        break;
-                    }
+                if let Some(transformed_scanner) =
+                    scanner.transform_based_on_good_scanners(&transformed_scanners)
+                {
+                    transformed_scanners.push(transformed_scanner);
+                    found[i] = true;
                 }
             }
         }
@@ -244,6 +247,10 @@ impl Day19Setup {
     }
 
     /// Calculate the part a response
+    ///
+    /// Requires the mapping to already have been done.
+    ///
+    /// How many unique beacons are there among all scanners.
     pub fn calculate_day_a(self: &Day19Setup) -> usize {
         let mut all_points: HashSet<&Point> = HashSet::new();
         for scanner in self.scanners.iter() {
@@ -255,26 +262,16 @@ impl Day19Setup {
     }
 
     /// Calculate the part b response
+    ///
+    /// Requires the mapping to already have been done.
+    ///
+    /// What is the maximum manhattan distance between any 2 scanners
     pub fn calculate_day_b(self: &Day19Setup) -> isize {
-        let mut points = self
-            .scanners
-            .iter()
-            .map(|scanner| scanner.offset.clone())
-            .map(|offset| [offset.x, offset.y, offset.z])
-            .collect::<Vec<[isize; 3]>>();
-        points.sort_unstable();
-        println!("{:?}", &points);
-        let diff_offset_magnitudes = self
-            .scanners
+        self.scanners
             .iter()
             .tuple_combinations()
             .map(|(scan_1, scan_2)| scan_1.offset.sub_point(&scan_2.offset))
             .map(|offset| offset.magnitude())
-            .collect::<Vec<isize>>();
-
-        // println!("{:?}", &diff_offset_magnitudes);
-        diff_offset_magnitudes
-            .into_iter()
             .reduce(std::cmp::max)
             .expect("Expected reduce to work as there are more than 2 scans comparing at all times")
     }
@@ -302,20 +299,19 @@ mod test {
             for y in 0..4 {
                 for z in 0..3 {
                     let found_val = Point { x: 1, y: 2, z: 3 }.multi_rotate(x, y, z);
-                    if all_points.contains(&found_val) {
-                        println!("Duplicate found on {} {} {}", x, y, z);
-                        println!("Duplicate of {:?}", rotation_mapping.get(&found_val));
-                    } else {
+                    if !all_points.contains(&found_val) {
                         all_points.push(found_val.clone());
                         rotation_mapping.insert(found_val.clone(), (x, y, z));
                     }
-
-                    println!("{}, {}, {} rotates to {:?}", x, y, z, found_val);
                 }
             }
         }
-        println!("Found {} points total", all_points.len());
-        println!("Found points are: {:?}", rotation_mapping.values())
+        let mut rotation_values: Vec<(usize, usize, usize)> =
+            rotation_mapping.values().copied().collect();
+        rotation_values.sort_unstable();
+        // likely to pass since ROTATIONS_TO_CHECK was built from these values, but still good to
+        // test that we haven't broken it
+        assert_eq!(&ROTATIONS_TO_CHECK[0..24], &rotation_values[0..24]);
     }
 
     #[test]
@@ -338,6 +334,8 @@ mod test {
 
     #[test]
     fn test_point_rots() {
+        // The rotations from the solution I borrowed from reddit, just to confirm I was doing this
+        // correctly (hint: I was)
         let expected_rots = [
             [[-3, -2, -1]],
             [[-3, -1, 2]],
