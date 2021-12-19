@@ -95,15 +95,12 @@ impl Scanner {
         }
     }
 
-    fn get_all_scanner_rotations(&self) -> [Scanner; 24] {
-        ROTATIONS_TO_CHECK
-            .iter()
-            .map(|(around_x_count, around_y_count, around_z_count)| {
+    fn get_all_scanner_rotations<'a>(&'a self) -> Box<dyn Iterator<Item = Scanner> + 'a> {
+        Box::new(ROTATIONS_TO_CHECK.iter().map(
+            |(around_x_count, around_y_count, around_z_count)| {
                 self.multi_rotate(*around_x_count, *around_y_count, *around_z_count)
-            })
-            .collect::<Vec<Scanner>>()
-            .try_into()
-            .expect("Should be 24 entries in both ROTATIONS_TO_CHECK and get_all_scanner_rotations.result")
+            },
+        ))
     }
 
     fn find_difference_between_common_points(&self, other: &Scanner) -> Option<Point> {
@@ -114,18 +111,17 @@ impl Scanner {
             .cartesian_product(&other.beacons)
             .map(|(p1, p2)| p1.sub_point(p2))
         {
-            *distances.entry(distance).or_insert(0) += 1;
-        }
-        for (distance, &count) in distances.iter() {
-            if count >= 12 {
-                return Some(distance.clone());
+            let entry = distances.entry(distance.clone()).or_insert(0);
+            *entry += 1;
+            if *entry >= 12 {
+                return Some(distance);
             }
         }
         None
     }
 
     fn rotate_scanner_and_apply_offset(&self, other: &Scanner) -> Option<Scanner> {
-        for scanner in other.get_all_scanner_rotations().into_iter() {
+        for scanner in other.get_all_scanner_rotations() {
             if let Some(diff) = self.find_difference_between_common_points(&scanner) {
                 return Some(scanner.add_point(&diff));
             }
