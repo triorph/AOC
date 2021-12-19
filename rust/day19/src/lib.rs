@@ -64,14 +64,9 @@ peg::parser! { grammar day19_parser() for str {
 }}
 
 impl Scanner {
-    fn add_point(self, p: &Point) -> Scanner {
+    fn add_point(&self, p: &Point) -> Scanner {
         Scanner {
-            beacons: self
-                .beacons
-                .iter()
-                .cloned()
-                .map(|x| x.add_point(p))
-                .collect(),
+            beacons: self.beacons.iter().map(|x| x.add_point(p)).collect(),
             offset: self.offset.add_point(p),
         }
     }
