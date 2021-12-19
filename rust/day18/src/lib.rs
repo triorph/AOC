@@ -11,7 +11,6 @@ enum ExplosionState {
 
 #[derive(Clone, Debug)]
 struct ExplosionRun {
-    number: SnailNumber,
     state: ExplosionState,
 }
 
@@ -50,213 +49,148 @@ peg::parser! { grammar day18_parser() for str {
 }}
 
 impl ExplosionRun {
-    fn run_normal_left_explode(&self, depth: usize) -> ExplosionRun {
+    fn run_normal_left_explode(&mut self, left: &SnailNumber, depth: usize) -> SnailNumber {
         let original_explosion_state = self.state.clone();
         let explosion_state_to_use = match self.state.clone() {
             ExplosionState::ToAssignRight(_) => ExplosionState::AllExploded,
             state => state,
         };
-
-        let ret = ExplosionRun {
-            number: self.number.clone(),
-            state: explosion_state_to_use.clone(),
+        self.state = explosion_state_to_use.clone();
+        let ret = self.find_explode_point(left, depth + 1);
+        if explosion_state_to_use != original_explosion_state {
+            self.state = original_explosion_state;
         }
-        .find_explode_point(depth + 1);
-        if original_explosion_state == explosion_state_to_use {
-            ret
-        } else {
-            // We used a fake AllExploded, so we should return the original ToAssignRight back
-            ExplosionRun {
-                number: ret.number,
-                state: original_explosion_state,
-            }
-        }
+        ret
     }
 
-    fn run_normal_right_explode(&self, depth: usize) -> ExplosionRun {
+    fn run_normal_right_explode(&mut self, right: &SnailNumber, depth: usize) -> SnailNumber {
         let original_explosion_state = self.state.clone();
         let explosion_state_to_use = match self.state.clone() {
             ExplosionState::ToAssignLeft(_) => ExplosionState::AllExploded,
             state => state,
         };
-        let ret = ExplosionRun {
-            number: self.number.clone(),
-            state: explosion_state_to_use.clone(),
+        self.state = explosion_state_to_use.clone();
+        let ret = self.find_explode_point(right, depth + 1);
+        if explosion_state_to_use != original_explosion_state {
+            self.state = original_explosion_state;
         }
-        .find_explode_point(depth + 1);
-        if original_explosion_state == explosion_state_to_use {
-            ret
-        } else {
-            // We used a fake AllExploded, so we should return the original ToAssignLeft back
-            ExplosionRun {
-                number: ret.number,
-                state: original_explosion_state,
-            }
-        }
+        ret
     }
 
     fn rerun_left_to_assign_if_needed(
-        &self,
+        &mut self,
+        left: SnailNumber,
         depth: usize,
-        explosion_state_from_right: ExplosionState,
-    ) -> ExplosionRun {
-        let ret = ExplosionRun {
-            number: self.number.clone(),
-            state: explosion_state_from_right.clone(),
-        };
-        match (self.state.clone(), explosion_state_from_right) {
-            (ExplosionState::ToAssignLeft(_), _) => ret,
-            (_, ExplosionState::ToAssignLeft(_)) => ret.find_explode_point(depth + 1),
-            _ => ret,
+        left_state: ExplosionState,
+    ) -> SnailNumber {
+        match (self.state.clone(), left_state) {
+            (_, ExplosionState::ToAssignLeft(_)) => left,
+
+            (ExplosionState::ToAssignLeft(_), _) => self.find_explode_point(&left, depth + 1),
+            _ => left,
         }
     }
 
     fn handle_non_explode_tuples(
+        &mut self,
         left: &SnailNumber,
         right: &SnailNumber,
-        state: ExplosionState,
         depth: usize,
-    ) -> ExplosionRun {
-        let left = ExplosionRun {
-            number: left.clone(),
-            state,
-        }
-        .run_normal_left_explode(depth);
-        let right = ExplosionRun {
-            number: right.clone(),
-            state: left.state.clone(),
-        }
-        .run_normal_right_explode(depth);
-        let left = left.rerun_left_to_assign_if_needed(depth, right.state);
-        ExplosionRun {
-            number: SnailNumber::Tuple(Box::new(left.number), Box::new(right.number)),
-            state: left.state,
-        }
+    ) -> SnailNumber {
+        let left = self.run_normal_left_explode(left, depth);
+        let left_state = self.state.clone();
+        let right = self.run_normal_right_explode(right, depth);
+        let left = self.rerun_left_to_assign_if_needed(left, depth, left_state);
+        SnailNumber::Tuple(Box::new(left), Box::new(right))
     }
 
-    fn assign_number(&self, val: usize, to_assign: usize) -> ExplosionRun {
-        ExplosionRun {
-            number: SnailNumber::Literal(val + to_assign),
-            state: ExplosionState::AllExploded,
-        }
+    fn assign_number(&mut self, val: usize, to_assign: usize) -> SnailNumber {
+        self.state = ExplosionState::AllExploded;
+        SnailNumber::Literal(val + to_assign)
     }
 
     fn handle_tuple_no_explosion(
-        &self,
+        &mut self,
         left: &SnailNumber,
         right: &SnailNumber,
         depth: usize,
-    ) -> ExplosionRun {
+    ) -> SnailNumber {
         if depth > 3 && (left.is_literal_pair() || right.is_literal_pair()) {
             if left.is_literal_pair() {
                 let (left_to_copy, right_to_copy) = left.get_tuple_vals();
                 let new_val = ExplosionRun {
-                    number: right.clone(),
                     state: ExplosionState::ToAssignRight(right_to_copy),
                 }
-                .find_explode_point(depth + 1)
-                .number;
-                ExplosionRun {
-                    number: SnailNumber::Tuple(
-                        Box::new(SnailNumber::Literal(0)),
-                        Box::new(new_val),
-                    ),
-                    state: ExplosionState::ToAssignLeft(left_to_copy),
-                }
+                .find_explode_point(right, depth + 1);
+                self.state = ExplosionState::ToAssignLeft(left_to_copy);
+                SnailNumber::Tuple(Box::new(SnailNumber::Literal(0)), Box::new(new_val))
             } else {
                 let (left_to_copy, right_to_copy) = right.get_tuple_vals();
                 let new_val = ExplosionRun {
-                    number: left.clone(),
                     state: ExplosionState::ToAssignLeft(left_to_copy),
                 }
-                .find_explode_point(depth + 1)
-                .number;
-                ExplosionRun {
-                    number: SnailNumber::Tuple(
-                        Box::new(new_val),
-                        Box::new(SnailNumber::Literal(0)),
-                    ),
-                    state: ExplosionState::ToAssignRight(right_to_copy),
-                }
+                .find_explode_point(left, depth + 1);
+                self.state = ExplosionState::ToAssignRight(right_to_copy);
+                SnailNumber::Tuple(Box::new(new_val), Box::new(SnailNumber::Literal(0)))
             }
         } else {
-            ExplosionRun::handle_non_explode_tuples(left, right, ExplosionState::NothingDone, depth)
+            self.handle_non_explode_tuples(left, right, depth)
         }
     }
 
     fn handle_to_assign_left(
+        &mut self,
         left: &SnailNumber,
         right: &SnailNumber,
         depth: usize,
         assign_val: usize,
-    ) -> ExplosionRun {
-        let right = ExplosionRun {
-            number: right.clone(),
-            state: ExplosionState::ToAssignLeft(assign_val),
-        }
-        .find_explode_point(depth + 1)
-        .number;
-        let left = ExplosionRun {
-            number: left.clone(),
-            state: ExplosionState::AllExploded,
-        }
-        .find_explode_point(depth + 1)
-        .number;
-        ExplosionRun {
-            number: SnailNumber::Tuple(Box::new(left), Box::new(right)),
-            state: ExplosionState::AllExploded,
-        }
+    ) -> SnailNumber {
+        self.state = ExplosionState::ToAssignLeft(assign_val);
+        let right = self.find_explode_point(right, depth + 1);
+        self.state = ExplosionState::AllExploded;
+        let left = self.find_explode_point(left, depth + 1);
+        SnailNumber::Tuple(Box::new(left), Box::new(right))
     }
 
     fn handle_to_assign_right(
+        &mut self,
         left: &SnailNumber,
         right: &SnailNumber,
         depth: usize,
         assign_val: usize,
-    ) -> ExplosionRun {
-        let left = ExplosionRun {
-            number: left.clone(),
-            state: ExplosionState::ToAssignRight(assign_val),
-        }
-        .find_explode_point(depth + 1)
-        .number;
-        let right = ExplosionRun {
-            number: right.clone(),
-            state: ExplosionState::AllExploded,
-        }
-        .find_explode_point(depth + 1)
-        .number;
-        ExplosionRun {
-            number: SnailNumber::Tuple(Box::new(left), Box::new(right)),
-            state: ExplosionState::AllExploded,
-        }
+    ) -> SnailNumber {
+        self.state = ExplosionState::ToAssignRight(assign_val);
+        let left = self.find_explode_point(left, depth + 1);
+        self.state = ExplosionState::AllExploded;
+        let right = self.find_explode_point(right, depth + 1);
+        SnailNumber::Tuple(Box::new(left), Box::new(right))
     }
 
-    fn find_explode_point(&self, depth: usize) -> ExplosionRun {
-        match (self.number.clone(), self.state.clone()) {
-            (SnailNumber::Literal(val), ExplosionState::ToAssignLeft(to_assign)) => {
+    fn find_explode_point(&mut self, number: &SnailNumber, depth: usize) -> SnailNumber {
+        match (number, self.state.clone()) {
+            (&SnailNumber::Literal(val), ExplosionState::ToAssignLeft(to_assign)) => {
                 self.assign_number(val, to_assign)
             }
-            (SnailNumber::Literal(val), ExplosionState::ToAssignRight(to_assign)) => {
+            (&SnailNumber::Literal(val), ExplosionState::ToAssignRight(to_assign)) => {
                 self.assign_number(val, to_assign)
             }
-            (SnailNumber::Literal(_), _) => self.clone(),
+            (&SnailNumber::Literal(_), _) => number.clone(),
             (SnailNumber::Tuple(left, right), ExplosionState::NothingDone) => {
-                self.handle_tuple_no_explosion(&left, &right, depth)
+                self.handle_tuple_no_explosion(left, right, depth)
             }
             (SnailNumber::Tuple(left, right), ExplosionState::ToAssignLeft(assign_val)) => {
-                ExplosionRun::handle_to_assign_left(&left, &right, depth, assign_val)
+                self.handle_to_assign_left(left, right, depth, assign_val)
             }
             (SnailNumber::Tuple(left, right), ExplosionState::ToAssignRight(assign_val)) => {
-                ExplosionRun::handle_to_assign_right(&left, &right, depth, assign_val)
+                self.handle_to_assign_right(left, right, depth, assign_val)
             }
-            (SnailNumber::Tuple(_, _), _) => self.clone(),
+            (&SnailNumber::Tuple(_, _), _) => number.clone(),
         }
     }
 }
 
 impl SnailNumber {
-    fn new(input_str: &str) -> SnailNumber {
+    fn _new(input_str: &str) -> SnailNumber {
         day18_parser::snailfishnumber(input_str).expect("SnailNumber did not parse correctly")
     }
 
@@ -297,15 +231,11 @@ impl SnailNumber {
     }
 
     fn run_explosion(&self) -> (SnailNumber, bool) {
-        let explosion_run = ExplosionRun {
-            number: self.clone(),
+        let mut explosion_run = ExplosionRun {
             state: ExplosionState::NothingDone,
-        }
-        .find_explode_point(1);
-        (
-            explosion_run.number,
-            explosion_run.state != ExplosionState::NothingDone,
-        )
+        };
+        let ret = explosion_run.find_explode_point(self, 1);
+        (ret, explosion_run.state != ExplosionState::NothingDone)
     }
 
     fn run_split(&self, has_split: bool) -> (SnailNumber, bool) {
@@ -428,22 +358,22 @@ mod test {
 
     #[test]
     fn test_run_explosion() {
-        let (n, f) = SnailNumber::new("[[[[[9,8],1],2],3],4]").run_explosion();
+        let (n, f) = SnailNumber::_new("[[[[[9,8],1],2],3],4]").run_explosion();
         assert_eq!(format!("{:?}", n), String::from("[[[[0,9],2],3],4]"));
         assert!(f);
-        let (n, f) = SnailNumber::new("[7,[6,[5,[4,[3,2]]]]]").run_explosion();
+        let (n, f) = SnailNumber::_new("[7,[6,[5,[4,[3,2]]]]]").run_explosion();
         assert_eq!(format!("{:?}", n), String::from("[7,[6,[5,[7,0]]]]"));
         assert!(f);
-        let (n, f) = SnailNumber::new("[[6,[5,[4,[3,2]]]],1]").run_explosion();
+        let (n, f) = SnailNumber::_new("[[6,[5,[4,[3,2]]]],1]").run_explosion();
         assert_eq!(format!("{:?}", n), String::from("[[6,[5,[7,0]]],3]"));
         assert!(f);
-        let (n, f) = SnailNumber::new("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]").run_explosion();
+        let (n, f) = SnailNumber::_new("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]").run_explosion();
         assert_eq!(
             format!("{:?}", n),
             String::from("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")
         );
         assert!(f);
-        let (n, f) = SnailNumber::new("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]").run_explosion();
+        let (n, f) = SnailNumber::_new("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]").run_explosion();
         assert_eq!(
             format!("{:?}", n),
             String::from("[[3,[2,[8,0]]],[9,[5,[7,0]]]]")
@@ -454,27 +384,27 @@ mod test {
     #[test]
     fn test_magnitude() {
         assert_eq!(
-            SnailNumber::new("[[1,2],[[3,4],5]]").calculate_magnitude(),
+            SnailNumber::_new("[[1,2],[[3,4],5]]").calculate_magnitude(),
             143
         );
         assert_eq!(
-            SnailNumber::new("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]").calculate_magnitude(),
+            SnailNumber::_new("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]").calculate_magnitude(),
             1384
         );
         assert_eq!(
-            SnailNumber::new("[[[[1,1],[2,2]],[3,3]],[4,4]]").calculate_magnitude(),
+            SnailNumber::_new("[[[[1,1],[2,2]],[3,3]],[4,4]]").calculate_magnitude(),
             445
         );
         assert_eq!(
-            SnailNumber::new("[[[[3,0],[5,3]],[4,4]],[5,5]]").calculate_magnitude(),
+            SnailNumber::_new("[[[[3,0],[5,3]],[4,4]],[5,5]]").calculate_magnitude(),
             791
         );
         assert_eq!(
-            SnailNumber::new("[[[[5,0],[7,4]],[5,5]],[6,6]]").calculate_magnitude(),
+            SnailNumber::_new("[[[[5,0],[7,4]],[5,5]],[6,6]]").calculate_magnitude(),
             1137
         );
         assert_eq!(
-            SnailNumber::new("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")
+            SnailNumber::_new("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")
                 .calculate_magnitude(),
             3488
         );
@@ -482,7 +412,7 @@ mod test {
 
     #[test]
     fn test_reduce_steps() {
-        let next = SnailNumber::new("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]");
+        let next = SnailNumber::_new("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]");
         let (next, has_split) = next.reduce_once();
         assert!(has_split);
         assert_eq!(
@@ -526,7 +456,7 @@ mod test {
         assert_eq!(
             format!(
                 "{:?}",
-                SnailNumber::new("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]").reduce()
+                SnailNumber::_new("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]").reduce()
             ),
             String::from("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")
         );

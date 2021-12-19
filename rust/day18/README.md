@@ -18,3 +18,12 @@ Each snailnumber also has a magnitude, which is 1 _ literal, or for a tuple: 2 _
 
 Part a: Sum all snailnumbers in the input, and return the magnitude of the final result
 Part b: For any 2 snailnumbers (and in either order), find the sum() whose magnitude is the largest
+
+### Notes:
+Have had a lot of trouble with this one; specifically on making the explosion work. I found Rust's mutability rules to be burdensome here, although
+perhaps I just don't understand them well. I couldn't find a way to replace the contents of the Box inside the Enum with a new value; but that's what
+I want to explore next. For now, I'm generating a new copy of the SnailNumber on the fly as we explode, either cloning what we already have if no
+explosion is necessary, or replacing with the new values from the explosion. I have an ExplosionState variable that helps us keep track of what things
+we need to be doing as we copy/explore the snail-number tree.
+
+I'm going to commit what i have, then go back to trying to make this work as a mutable SnailNumber object.
