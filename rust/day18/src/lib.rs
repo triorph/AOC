@@ -14,12 +14,6 @@ struct ExplosionRun {
     state: ExplosionState,
 }
 
-struct ExplosionResult<'a> {
-    to_explode: Option<&'a mut SnailNumber>,
-    left: Option<&'a mut SnailNumber>,
-    right: Option<&'a mut SnailNumber>,
-}
-
 #[derive(Clone, PartialEq)]
 pub enum SnailNumber {
     Literal(usize),
@@ -27,16 +21,6 @@ pub enum SnailNumber {
 }
 pub struct Day18Setup {
     snailfish_numbers: Vec<SnailNumber>,
-}
-
-impl<'a> ExplosionResult<'a> {
-    fn none() -> ExplosionResult<'a> {
-        ExplosionResult {
-            to_explode: None,
-            left: None,
-            right: None,
-        }
-    }
 }
 
 impl std::fmt::Debug for SnailNumber {
@@ -205,6 +189,62 @@ impl ExplosionRun {
     }
 }
 
+trait Explosion {
+    fn explode_literal_pair(&mut self, depth: usize, state: ExplosionState) -> ExplosionState;
+    fn assign_left(&mut self, val: usize) -> ExplosionState;
+    fn assign_right(&mut self, val: usize) -> ExplosionState;
+}
+
+impl Explosion for std::boxed::Box<SnailNumber> {
+    fn explode_literal_pair(
+        self: &mut std::boxed::Box<SnailNumber>,
+        depth: usize,
+        state: ExplosionState,
+    ) -> ExplosionState {
+        if state != ExplosionState::NothingDone {
+            return state;
+        }
+        match **self {
+            SnailNumber::Literal(_) => state,
+            SnailNumber::Tuple(left, right) => {
+                if depth > 3 && left.is_literal_pair() {
+                    let (pair_left, pair_right) = left.get_tuple_vals();
+                    *left = SnailNumber::Literal(0);
+                    *right = right.add_number(pair_right);
+                    ExplosionState::ToAssignLeft(pair_left)
+                } else if depth > 3 && right.is_literal_pair() {
+                    let (pair_left, pair_right) = left.get_tuple_vals();
+                    *left = left.add_number(pair_left);
+                    *right = SnailNumber::Literal(0);
+                    ExplosionState::ToAssignRight(pair_right)
+                } else {
+                    self.run_mut_explosion(depth + 1, state)
+                }
+            }
+        }
+    }
+
+    fn assign_left(&mut self, val: usize) -> ExplosionState {
+        match self {
+            SnailNumber::Literal(current) => {
+                *self = Box::new(SnailNumber::Literal(current + val));
+                ExplosionState::AllExploded
+            }
+            SnailNumber::Tuple(_, right) => right.assign_left(val),
+        }
+    }
+
+    fn assign_right(&mut self, val: usize) -> ExplosionState {
+        match **self {
+            SnailNumber::Literal(current) => {
+                **self = SnailNumber::Literal(current + val);
+                ExplosionState::AllExploded
+            }
+            SnailNumber::Tuple(left, _) => left.assign_right(val),
+        }
+    }
+}
+
 impl SnailNumber {
     fn _new(input_str: &str) -> SnailNumber {
         day18_parser::snailfishnumber(input_str).expect("SnailNumber did not parse correctly")
@@ -233,42 +273,35 @@ impl SnailNumber {
         }
     }
 
-    fn find_literal_pair_to_explode<'a>(&'a mut self, depth: usize) -> ExplosionResult<'a> {
-        match self {
-            &mut SnailNumber::Literal(_) => ExplosionResult::none(),
-            SnailNumber::Tuple(left, right) => {
-                if depth > 3 && left.is_literal_pair() {
-                    ExplosionResult {
-                        to_explode: Some(left),
-                        left: None,
-                        right: Some(right),
+    fn add_number(&self, n: usize) -> SnailNumber {
+        if let SnailNumber::Literal(val) = self {
+            SnailNumber::Literal(val + n)
+        } else {
+            panic!("Can only add to literal snailnumber");
+        }
+    }
+
+    fn run_mut_explosion(&mut self, depth: usize, state: ExplosionState) -> ExplosionState {
+        if let SnailNumber::Tuple(left, right) = self {
+            if state == ExplosionState::NothingDone {
+                let left_state = left.explode_literal_pair(depth + 1, state);
+                if left_state == ExplosionState::NothingDone {
+                    let right_state = right.explode_literal_pair(depth + 1, state);
+                    if let ExplosionState::ToAssignLeft(val) = right_state {
+                        right.assign_left(val)
+                    } else {
+                        right_state
                     }
-                } else if depth > 3 && right.is_literal_pair() {
-                    ExplosionResult {
-                        to_explode: Some(right),
-                        left: Some(left),
-                        right: None,
-                    }
+                } else if let ExplosionState::ToAssignRight(val) = left_state {
+                    right.assign_right(val)
                 } else {
-                    let mut left_ret = left.find_literal_pair_to_explode(depth + 1);
-                    if left_ret.to_explode.is_some() {
-                        if left_ret.right.is_none() {
-                            left_ret.right = Some(right.get_leftmost());
-                        }
-                        left_ret
-                   } else {
-                        let mut right_ret = right.find_literal_pair_to_explode(depth + 1);
-                        if right_ret.to_explode.is_some() {
-                            if right_ret.left.is_none() {
-                                right_ret.left = Some(left.get_rightmost());
-                            }
-                            right_ret
-                        } else {
-                            ExplosionResult::none()
-                        }
-                    }
+                    left_state
                 }
+            } else {
+                state
             }
+        } else {
+            state
         }
     }
 
