@@ -27,3 +27,6 @@ explosion is necessary, or replacing with the new values from the explosion. I h
 we need to be doing as we copy/explore the snail-number tree.
 
 I'm going to commit what i have, then go back to trying to make this work as a mutable SnailNumber object.
+
+Note: I went through some iterations with this, but I think DerefMut ended up being the key variable, which can be short-handed with "&mut *self" in the match
+expression.
