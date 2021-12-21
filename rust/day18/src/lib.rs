@@ -43,23 +43,16 @@ peg::parser! { grammar day18_parser() for str {
         }
 }}
 
-trait Explosion {
-    fn explode_literal_pair(&mut self, depth: usize, state: ExplosionState) -> ExplosionState;
-    fn assign_left(&mut self, val: usize) -> ExplosionState;
-    fn assign_right(&mut self, val: usize) -> ExplosionState;
-    fn run_mut_split(&mut self, has_split: bool) -> bool;
-}
-
-impl Explosion for std::boxed::Box<SnailNumber> {
+impl SnailNumber {
     fn run_mut_split(&mut self, has_split: bool) -> bool {
         if !has_split {
-            match &mut **self {
+            match &mut *self {
                 SnailNumber::Literal(val) => {
                     if *val >= 10 {
-                        *self = Box::new(SnailNumber::Tuple(
+                        *self = SnailNumber::Tuple(
                             Box::new(SnailNumber::Literal(*val / 2)),
                             Box::new(SnailNumber::Literal(*val / 2 + *val % 2)),
-                        ));
+                        );
                         true
                     } else {
                         has_split
@@ -103,9 +96,9 @@ impl Explosion for std::boxed::Box<SnailNumber> {
     }
 
     fn assign_left(&mut self, val: usize) -> ExplosionState {
-        match &mut **self {
+        match &mut *self {
             SnailNumber::Literal(current) => {
-                *self = Box::new(SnailNumber::Literal(*current + val));
+                *self = SnailNumber::Literal(*current + val);
                 ExplosionState::AllExploded
             }
             SnailNumber::Tuple(_, right) => right.assign_left(val),
@@ -113,17 +106,14 @@ impl Explosion for std::boxed::Box<SnailNumber> {
     }
 
     fn assign_right(&mut self, val: usize) -> ExplosionState {
-        match &mut **self {
+        match &mut *self {
             SnailNumber::Literal(current) => {
-                *self = Box::new(SnailNumber::Literal(*current + val));
+                *self = SnailNumber::Literal(*current + val);
                 ExplosionState::AllExploded
             }
             SnailNumber::Tuple(left, _) => left.assign_right(val),
         }
     }
-}
-
-impl SnailNumber {
     fn _new(input_str: &str) -> SnailNumber {
         day18_parser::snailfishnumber(input_str).expect("SnailNumber did not parse correctly")
     }
