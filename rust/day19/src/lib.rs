@@ -2,7 +2,7 @@ extern crate peg;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
-const ROTATIONS_TO_CHECK: [(usize, usize, usize); 24] = [
+const _ROTATIONS_TO_CHECK: [(usize, usize, usize); 24] = [
     (0, 0, 0),
     (0, 0, 1),
     (0, 0, 2),
@@ -40,6 +40,7 @@ struct Point {
 struct Scanner {
     beacons: Vec<Point>,
     offset: Point,
+    rot: usize,
 }
 
 pub struct Day19Setup {
@@ -56,7 +57,7 @@ peg::parser! { grammar day19_parser() for str {
     rule beacon() -> Point
         = x:number() "," y:number() "," z:number() { Point{x, y, z} }
     rule scanner() -> Scanner
-        = "--- scanner " number() " ---\n" beacons:beacon() ++ "\n"  { Scanner { beacons, offset: Point{ x:0, y:0, z:0 } } }
+        = "--- scanner " number() " ---\n" beacons:beacon() ++ "\n"  { Scanner { beacons, offset: Point{ x:0, y:0, z:0 } , rot: 0} }
     pub rule parse() -> Day19Setup
         = scanners:scanner() ++ "\n\n" "\n" * {
             Day19Setup { scanners }
@@ -64,11 +65,11 @@ peg::parser! { grammar day19_parser() for str {
 }}
 
 impl Scanner {
-    fn add_point(&self, p: &Point) -> Scanner {
-        Scanner {
-            beacons: self.beacons.iter().map(|x| x.add_point(p)).collect(),
-            offset: self.offset.add_point(p),
+    fn add_point(&mut self, p: &Point) {
+        for beacon in self.beacons.iter_mut() {
+            beacon.add_point(p)
         }
+        self.offset.add_point(p);
     }
 
     fn multi_rotate(
@@ -87,24 +88,24 @@ impl Scanner {
             offset: self
                 .offset
                 .multi_rotate(around_x_count, around_y_count, around_z_count),
+            rot: 0,
         }
     }
 
-    fn get_all_scanner_rotations<'a>(&'a self) -> Box<dyn Iterator<Item = Scanner> + 'a> {
-        Box::new(ROTATIONS_TO_CHECK.iter().map(
-            |(around_x_count, around_y_count, around_z_count)| {
-                self.multi_rotate(*around_x_count, *around_y_count, *around_z_count)
-            },
-        ))
+    fn rotate_scanner(&mut self) {
+        for beacon in self.beacons.iter_mut() {
+            beacon.rotate(self.rot);
+        }
+        self.rot += 1;
     }
 
     fn find_difference_between_common_points(&self, other: &Scanner) -> Option<Point> {
-        let mut distances: HashMap<Point, usize> = HashMap::new();
+        let mut distances: HashMap<Point, usize> = HashMap::with_capacity(self.beacons.len() * 2);
         for distance in self
             .beacons
             .iter()
             .cartesian_product(&other.beacons)
-            .map(|(p1, p2)| p1.sub_point(p2))
+            .map(|(p1, p2)| p2.sub_point(p1))
         {
             let entry = distances.entry(distance.clone()).or_insert(0);
             *entry += 1;
@@ -115,32 +116,170 @@ impl Scanner {
         None
     }
 
-    fn rotate_scanner_and_apply_offset(&self, other: &Scanner) -> Option<Scanner> {
-        for scanner in other.get_all_scanner_rotations() {
-            if let Some(diff) = self.find_difference_between_common_points(&scanner) {
-                return Some(scanner.add_point(&diff));
+    fn rotate_scanner_and_apply_offset(&mut self, other: &Scanner) -> bool {
+        for _ in 0..24 {
+            self.rotate_scanner();
+            if let Some(diff) = self.find_difference_between_common_points(other) {
+                self.add_point(&diff);
+                return true;
             }
         }
-        None
+        false
     }
 
-    fn transform_based_on_good_scanners(&self, others: &[Scanner]) -> Option<Scanner> {
+    fn transform_based_on_good_scanners(&mut self, others: &[Scanner]) -> bool {
         for other in others.iter() {
-            if let Some(transformed_scanner) = other.rotate_scanner_and_apply_offset(self) {
-                return Some(transformed_scanner);
+            if self.rotate_scanner_and_apply_offset(other) {
+                return true;
             }
+            self.rotate_scanner(); // Resets back to 0 rotation;
+            self.rot = 0;
         }
-        None
+        false
     }
 }
 
 impl Point {
-    fn add_point(&self, other: &Point) -> Point {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
+    fn rotate(&mut self, rot_point: usize) {
+        match rot_point {
+            // targets are
+            0 => (),
+            //x, y, z
+            1 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //x, -y, -z,
+            2 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //-x, -y, z,
+            3 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-x, y, -z,
+            4 => {
+                let old_y = self.y;
+                self.y = self.z;
+                self.z = -old_y;
+            }
+            //-x, -z, -y,
+            5 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-x, z, y,
+            6 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //x, z, -y,
+            7 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //x, -z, y,
+            8 => {
+                let old_x = self.x;
+                self.x = self.z;
+                self.z = self.y;
+                self.y = old_x;
+            }
+            //y, x, -z,
+            9 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //y, -x, z,
+            10 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //-y, -x, -z,
+            11 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-y, x, z,
+            12 => {
+                self.x = -self.x;
+                std::mem::swap(&mut self.y, &mut self.z);
+            }
+            //y, z, x,
+            13 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //y, -z, -x,
+            14 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //-y, -z, x,
+            15 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-y, z, -x,
+            16 => {
+                let old_x = self.x;
+                self.x = self.y;
+                self.y = -self.z;
+                self.z = -old_x;
+            }
+            //z, x, y,
+            17 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //z, -x, -y,
+            18 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //-z, -x, y,
+            19 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-z, x, -y,
+            20 => {
+                self.x = -self.x;
+                let old_y = self.y;
+                self.y = -self.z;
+                self.z = -old_y;
+            }
+            //z, y, -x,
+            21 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //z, -y, x,
+            22 => {
+                self.x = -self.x;
+                self.z = -self.z;
+            }
+            //-z, -y, -x,
+            23 => {
+                self.y = -self.y;
+                self.z = -self.z;
+            }
+            //-z, y, x,
+            24 => {
+                let old_x = self.x;
+                self.x = self.z;
+                self.z = -old_x;
+            }
+            // x, y, z
+            _ => (),
         }
+    }
+    fn add_point(&mut self, other: &Point) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
     }
 
     fn sub_point(&self, other: &Point) -> Point {
@@ -214,26 +353,21 @@ impl Day19Setup {
     /// first scanner in the list.
     ///
     /// Returns: A new Day19Setup with all the scanners in the correct orientation and position
-    pub fn perform_scanner_mapping(self: &Day19Setup) -> Day19Setup {
+    pub fn perform_scanner_mapping(&mut self) {
         let mut transformed_scanners = vec![];
+        let mut next_transformed_scanners = vec![];
         let mut found: Vec<bool> = vec![false; self.scanners.len()];
         found[0] = true;
         transformed_scanners.push(self.scanners[0].clone());
-        while transformed_scanners.len() < self.scanners.len() {
-            for (i, scanner) in self.scanners.iter().enumerate() {
-                if found[i] {
-                    continue;
-                }
-                if let Some(transformed_scanner) =
-                    scanner.transform_based_on_good_scanners(&transformed_scanners)
-                {
-                    transformed_scanners.push(transformed_scanner);
-                    found[i] = true;
+        while !found.iter().all(|x| *x) {
+            for (i, f) in found.iter_mut().enumerate().take(self.scanners.len()) {
+                if !*f && self.scanners[i].transform_based_on_good_scanners(&transformed_scanners) {
+                    next_transformed_scanners.push(self.scanners[i].clone());
+                    *f = true;
                 }
             }
-        }
-        Day19Setup {
-            scanners: transformed_scanners,
+            transformed_scanners = next_transformed_scanners;
+            next_transformed_scanners = vec![];
         }
     }
 
@@ -274,7 +408,7 @@ mod test {
     use crate::HashMap;
     use crate::Point;
     use crate::Scanner;
-    use crate::ROTATIONS_TO_CHECK;
+    use crate::_ROTATIONS_TO_CHECK;
 
     #[test]
     fn test_parse() {
@@ -302,7 +436,7 @@ mod test {
         rotation_values.sort_unstable();
         // likely to pass since ROTATIONS_TO_CHECK was built from these values, but still good to
         // test that we haven't broken it
-        assert_eq!(&ROTATIONS_TO_CHECK[0..24], &rotation_values[0..24]);
+        assert_eq!(&_ROTATIONS_TO_CHECK[0..24], &rotation_values[0..24]);
     }
 
     #[test]
@@ -310,6 +444,7 @@ mod test {
         let scanner = Scanner {
             beacons: vec![Point { x: 1, y: 2, z: 3 }, Point { x: -3, y: 5, z: -8 }],
             offset: Point { x: 0, y: 0, z: 0 },
+            rot: 0,
         };
         let scanner_rot = scanner.multi_rotate(1, 0, 0);
         assert_eq!(scanner_rot.beacons[0], Point { x: 1, y: 3, z: -2 });
@@ -327,43 +462,56 @@ mod test {
     fn test_point_rots() {
         // The rotations from the solution I borrowed from reddit, just to confirm I was doing this
         // correctly (hint: I was)
-        let expected_rots = [
-            [[-3, -2, -1]],
-            [[-3, -1, 2]],
-            [[-3, 1, -2]],
-            [[-3, 2, 1]],
-            [[-2, -3, 1]],
-            [[-2, -1, -3]],
-            [[-2, 1, 3]],
-            [[-2, 3, -1]],
-            [[-1, -3, -2]],
-            [[-1, -2, 3]],
-            [[-1, 2, -3]],
-            [[-1, 3, 2]],
-            [[1, -3, 2]],
-            [[1, -2, -3]],
-            [[1, 2, 3]],
-            [[1, 3, -2]],
-            [[2, -3, -1]],
-            [[2, -1, 3]],
-            [[2, 1, -3]],
-            [[2, 3, 1]],
-            [[3, -2, 1]],
-            [[3, -1, -2]],
-            [[3, 1, 2]],
-            [[3, 2, -1]],
+        let mut expected_rots = [
+            Point {
+                x: -3,
+                y: -2,
+                z: -1,
+            },
+            Point { x: -3, y: -1, z: 2 },
+            Point { x: -3, y: 1, z: -2 },
+            Point { x: -3, y: 2, z: 1 },
+            Point { x: -2, y: -3, z: 1 },
+            Point {
+                x: -2,
+                y: -1,
+                z: -3,
+            },
+            Point { x: -2, y: 1, z: 3 },
+            Point { x: -2, y: 3, z: -1 },
+            Point {
+                x: -1,
+                y: -3,
+                z: -2,
+            },
+            Point { x: -1, y: -2, z: 3 },
+            Point { x: -1, y: 2, z: -3 },
+            Point { x: -1, y: 3, z: 2 },
+            Point { x: 1, y: -3, z: 2 },
+            Point { x: 1, y: -2, z: -3 },
+            Point { x: 1, y: 2, z: 3 },
+            Point { x: 1, y: 3, z: -2 },
+            Point { x: 2, y: -3, z: -1 },
+            Point { x: 2, y: -1, z: 3 },
+            Point { x: 2, y: 1, z: -3 },
+            Point { x: 2, y: 3, z: 1 },
+            Point { x: 3, y: -2, z: 1 },
+            Point { x: 3, y: -1, z: -2 },
+            Point { x: 3, y: 1, z: 2 },
+            Point { x: 3, y: 2, z: -1 },
         ];
 
-        let mut calculated_rots = ROTATIONS_TO_CHECK
-            .iter()
-            .map(|(x, y, z)| Point { x: 1, y: 2, z: 3 }.multi_rotate(*x, *y, *z))
+        expected_rots.sort_unstable();
+
+        let mut p = Point { x: 1, y: 2, z: 3 };
+        let mut calculated_rots = (0..24)
+            .map(|rotate_index| {
+                p.rotate(rotate_index);
+                p.clone()
+            })
             .collect::<Vec<Point>>();
         calculated_rots.sort_unstable();
-        for (calculated, expected) in calculated_rots.iter().zip(expected_rots) {
-            assert_eq!(calculated.x, expected[0][0]);
-            assert_eq!(calculated.y, expected[0][1]);
-            assert_eq!(calculated.z, expected[0][2]);
-        }
+        assert_eq!(expected_rots.to_vec(), calculated_rots);
     }
     #[test]
     fn test_scanner_diffs() {
@@ -384,8 +532,9 @@ mod test {
                 Point { x: 13, y: 6, z: 6 },
             ],
             offset: Point { x: 0, y: 0, z: 0 },
+            rot: 0,
         };
-        let scanner_2 = Scanner {
+        let mut scanner_2 = Scanner {
             beacons: vec![
                 Point { x: 1, y: 2, z: 4 },
                 Point { x: 2, y: 2, z: 4 },
@@ -402,25 +551,24 @@ mod test {
                 Point { x: 7, y: -3, z: 0 },
             ],
             offset: Point { x: 0, y: 0, z: 0 },
+            rot: 0,
         };
-        let resulting_scanner = scanner_1
-            .rotate_scanner_and_apply_offset(&scanner_2)
-            .expect("Test should map correctly");
-        assert_eq!(resulting_scanner.beacons[0], Point { x: 1, y: 2, z: 3 });
-        assert_eq!(resulting_scanner.offset, Point { x: 0, y: 0, z: -1 });
+        assert!(scanner_2.rotate_scanner_and_apply_offset(&scanner_1));
+        assert_eq!(scanner_2.beacons[0], Point { x: 1, y: 2, z: 3 });
+        assert_eq!(scanner_2.offset, Point { x: 0, y: 0, z: -1 });
     }
 
     #[test]
     fn test_day_a() {
-        let day19_setup = Day19Setup::new(include_str!("../test_data.txt"));
-        let transformed_setup = day19_setup.perform_scanner_mapping();
-        assert_eq!(transformed_setup.calculate_day_a(), 79);
+        let mut day19_setup = Day19Setup::new(include_str!("../test_data.txt"));
+        day19_setup.perform_scanner_mapping();
+        assert_eq!(day19_setup.calculate_day_a(), 79);
     }
 
     #[test]
     fn test_day_b() {
-        let day19_setup = Day19Setup::new(include_str!("../test_data.txt"));
-        let transformed_setup = day19_setup.perform_scanner_mapping();
-        assert_eq!(transformed_setup.calculate_day_b(), 3621);
+        let mut day19_setup = Day19Setup::new(include_str!("../test_data.txt"));
+        day19_setup.perform_scanner_mapping();
+        assert_eq!(day19_setup.calculate_day_b(), 3621);
     }
 }

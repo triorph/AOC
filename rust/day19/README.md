@@ -43,4 +43,16 @@ and the problem was so trivial. With a sleep cycle in between I went from Rank 1
 
 On the flip side, I think my approach to coding this was really good, and the final code without any real passes is pretty good, with only some minor changes needed to tidy it up. (Although a little worse after all the debugging)
 
+#### Notes:
+
 The solution isn't the fastest, but runs faster than the person I copied off (not exactly sure why), so I'm happy with that.
+
+Note: I tried something around doing the rotations in a more cached way, by working out each of the 24 permutation + negative number permutations to get the same rotation result, but
+it actually made things run slower. My suspicion is that the real reason for slowishness is due to constantly creating new memory areas and then deleting them. What would be good
+is to have in-place updates of all the memory values, and see if that runs faster. Most notably I would need &mut rotate_to_next on each point, and a given transformation
+from each rotation position into the next.
+
+Further proof that you need to actually profile your code, I changed all the scanners to work on local copies and it takes the exact same amount of time. Although we do still have to do a
+clone on each scanner to add it to the transformed list. The next step might be looking at async operations for improvements; although
+I made some mild improvements by changing the HashMap to use with_capacity, and fixing the main loop to only check against newly added scanners instead
+of all the already-previously-checked ones too.
