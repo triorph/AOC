@@ -1,20 +1,23 @@
 extern crate peg;
-use itertools::Itertools;
-use std::cmp::{max, min};
 
 pub struct Day22Setup {
     volume_steps: Vec<VolumeStep>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-struct VolumeStep {
-    volume_type: bool,
+struct Cuboid {
     min_x: isize,
     max_x: isize,
     min_y: isize,
     max_y: isize,
     min_z: isize,
     max_z: isize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct VolumeStep {
+    volume_type: bool,
+    block: Cuboid,
 }
 
 peg::parser! { grammar day22_parser() for str {
@@ -32,7 +35,7 @@ peg::parser! { grammar day22_parser() for str {
         = v:(volume_on() / volume_off()) { v }
     rule volume_step() -> VolumeStep
         = volume_type:volume_type() " x=" min_x:number() ".." max_x:number() ",y=" min_y:number() ".." max_y:number() ",z=" min_z:number() ".." max_z:number() {
-            VolumeStep { volume_type, min_x, max_x, min_y, max_y, min_z, max_z }
+            VolumeStep { volume_type, block: Cuboid{min_x, max_x, min_y, max_y, min_z, max_z }}
         }
     pub rule parse() -> Day22Setup
         = volume_steps:volume_step() ++ "\n" "\n" * {
@@ -40,33 +43,69 @@ peg::parser! { grammar day22_parser() for str {
         }
 }}
 
-impl VolumeStep {
-    fn constrain_day_a(&self) -> VolumeStep {
-        VolumeStep {
-            volume_type: self.volume_type,
-            min_x: max(self.min_x, -50),
-            max_x: min(self.max_x, 50),
-            min_y: max(self.min_y, -50),
-            max_y: min(self.max_y, 50),
-            min_z: max(self.min_z, -50),
-            max_z: min(self.max_z, 50),
-        }
+impl Cuboid {
+    fn outside_day_a_limit(&self) -> bool {
+        self.min_x < -50
+            || self.min_x > 50
+            || self.max_x < -50
+            || self.max_x > 50
+            || self.min_y < -50
+            || self.min_y > 50
+            || self.max_y < -50
+            || self.max_y > 50
+            || self.min_z < -50
+            || self.min_z > 50
+            || self.max_z < -50
+            || self.max_z > 50
     }
 
     fn is_empty(&self) -> bool {
         self.min_x > self.max_x || self.min_y > self.max_y || self.min_z > self.max_z
     }
 
-    fn is_overlapping(&self, other: &VolumeStep) -> bool {
-        (other.min_x..other.max_x).contains(&self.min_x)
-            || (other.min_x..other.max_x).contains(&self.max_x)
-            || (other.min_y..other.max_y).contains(&self.min_y)
-            || (other.min_y..other.max_y).contains(&self.max_y)
-            || (other.min_z..other.max_z).contains(&self.min_z)
-            || (other.min_z..other.max_z).contains(&self.max_z)
+    fn overlaps_x(&self, val: isize) -> bool {
+        (self.min_x..=self.max_x).contains(&val)
     }
 
-    fn subtract_volume_for_x(&self, other: &VolumeStep) -> Vec<VolumeStep> {
+    fn overlaps_y(&self, val: isize) -> bool {
+        (self.min_y..=self.max_y).contains(&val)
+    }
+
+    fn overlaps_z(&self, val: isize) -> bool {
+        (self.min_z..=self.max_z).contains(&val)
+    }
+
+    fn is_overlapping_x(&self, other: &Cuboid) -> bool {
+        self.overlaps_x(other.min_x)
+            || self.overlaps_x(other.max_x)
+            || other.overlaps_x(self.min_x)
+            || other.overlaps_x(self.max_x)
+    }
+    fn is_overlapping_y(&self, other: &Cuboid) -> bool {
+        self.overlaps_y(other.min_y)
+            || self.overlaps_y(other.max_y)
+            || other.overlaps_y(self.min_y)
+            || other.overlaps_y(self.max_y)
+    }
+    fn is_overlapping_z(&self, other: &Cuboid) -> bool {
+        self.overlaps_z(other.min_z)
+            || self.overlaps_z(other.max_z)
+            || other.overlaps_z(self.min_z)
+            || other.overlaps_z(self.max_z)
+    }
+    fn is_overlapping(&self, other: &Cuboid) -> bool {
+        self.is_overlapping_x(other) && self.is_overlapping_y(other) && self.is_overlapping_z(other)
+    }
+    fn is_subset_of(&self, other: &Cuboid) -> bool {
+        self.min_x >= other.min_x
+            && self.max_x <= other.max_x
+            && self.min_y >= other.min_y
+            && self.max_y <= other.max_y
+            && self.min_z >= other.min_z
+            && self.max_z <= other.max_z
+    }
+
+    fn subtract_volume_for_x(&self, other: &Cuboid) -> Vec<Cuboid> {
         if self.is_overlapping(other) {
             let split_x = self.split_x(other);
             split_x
@@ -75,135 +114,123 @@ impl VolumeStep {
                 .flatten()
                 .filter(|v| !v.is_empty())
                 .filter(|v| !v.is_subset_of(other))
-                .unique()
                 .collect()
         } else {
             vec![self.clone()]
         }
     }
 
-    fn is_subset_of(&self, other: &VolumeStep) -> bool {
-        println!("Checking is subset: {:?} {:?}", self, other);
-        let ret = self.min_x >= other.min_x
-            && self.max_x <= other.max_x
-            && self.min_y >= other.min_y
-            && self.max_y <= other.max_y
-            && self.min_z >= other.min_z
-            && self.max_z <= other.min_z;
-        println!("subset result: {}", ret);
+    fn get_x_vals(&self, other: &Cuboid) -> Vec<isize> {
+        let mut ret = vec![self.min_x];
+        if self.overlaps_x(other.min_x) {
+            ret.push(other.min_x - 1);
+            ret.push(other.min_x)
+        }
+        if self.overlaps_x(other.max_x) {
+            ret.push(other.max_x);
+            ret.push(other.max_x + 1);
+        }
+        ret.push(self.max_x);
         ret
     }
 
-    fn split_x(&self, other: &VolumeStep) -> Vec<VolumeStep> {
-        if other.min_x >= self.min_x && other.min_x <= self.max_x
-            || other.max_x >= self.min_x && other.max_x <= self.max_x
-        {
-            vec![
-                VolumeStep {
-                    volume_type: true,
-                    max_x: min(other.min_x - 1, self.max_x),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_x: max(other.min_x, self.min_x),
-                    max_x: min(other.max_x, self.max_x),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_x: max(other.max_x + 1, self.min_x),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-            ]
-        } else {
-            vec![self.clone()]
+    fn get_y_vals(&self, other: &Cuboid) -> Vec<isize> {
+        let mut ret = vec![self.min_y];
+        if self.overlaps_y(other.min_y) {
+            ret.push(other.min_y - 1);
+            ret.push(other.min_y)
         }
+        if self.overlaps_y(other.max_y) {
+            ret.push(other.max_y);
+            ret.push(other.max_y + 1);
+        }
+        ret.push(self.max_y);
+        ret
     }
 
-    fn subtract_volume_for_y(&self, other: &VolumeStep) -> Vec<VolumeStep> {
+    fn get_z_vals(&self, other: &Cuboid) -> Vec<isize> {
+        let mut ret = vec![self.min_z];
+        if self.overlaps_z(other.min_z) {
+            ret.push(other.min_z - 1);
+            ret.push(other.min_z)
+        }
+        if self.overlaps_z(other.max_z) {
+            ret.push(other.max_z);
+            ret.push(other.max_z + 1);
+        }
+        ret.push(self.max_z);
+        ret
+    }
+
+    fn split_x(&self, other: &Cuboid) -> Vec<Cuboid> {
+        let mut ret = vec![];
+        let x_vals = self.get_x_vals(other);
+        for i in 0..(x_vals.len() / 2) {
+            ret.push(Cuboid {
+                min_x: x_vals[2 * i],
+                max_x: x_vals[2 * i + 1],
+                ..self.clone()
+            })
+        }
+        ret
+    }
+
+    fn split_y(&self, other: &Cuboid) -> Vec<Cuboid> {
+        let mut ret = vec![];
+        let x_vals = self.get_y_vals(other);
+        for i in 0..(x_vals.len() / 2) {
+            ret.push(Cuboid {
+                min_y: x_vals[2 * i],
+                max_y: x_vals[2 * i + 1],
+                ..self.clone()
+            })
+        }
+        ret
+    }
+
+    fn split_z(&self, other: &Cuboid) -> Vec<Cuboid> {
+        let mut ret = vec![];
+        let x_vals = self.get_z_vals(other);
+        for i in 0..(x_vals.len() / 2) {
+            ret.push(Cuboid {
+                min_z: x_vals[2 * i],
+                max_z: x_vals[2 * i + 1],
+                ..self.clone()
+            })
+        }
+        ret
+    }
+
+    fn subtract_volume_for_y(&self, other: &Cuboid) -> Vec<Cuboid> {
         let split_y = self.split_y(other);
         split_y
             .into_iter()
             .map(|y| y.subtract_volume_for_z(other))
             .flatten()
-            .filter(|v| !v.is_empty())
-            .filter(|v| !v.is_subset_of(other))
-            .unique()
             .collect()
     }
 
-    fn split_y(&self, other: &VolumeStep) -> Vec<VolumeStep> {
-        if other.min_y >= self.min_y && other.min_y <= self.max_y
-            || other.max_y >= self.min_y && other.max_y <= self.max_y
-        {
-            vec![
-                VolumeStep {
-                    volume_type: true,
-                    max_y: min(other.min_y - 1, self.max_y),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_y: max(other.min_y, self.min_y),
-                    max_y: min(other.max_y, self.max_y),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_y: max(other.max_y + 1, self.min_y),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-            ]
-        } else {
-            vec![self.clone()]
-        }
-    }
-
-    fn subtract_volume_for_z(&self, other: &VolumeStep) -> Vec<VolumeStep> {
+    fn subtract_volume_for_z(&self, other: &Cuboid) -> Vec<Cuboid> {
         self.split_z(other)
-    }
-
-    fn split_z(&self, other: &VolumeStep) -> Vec<VolumeStep> {
-        if other.min_z >= self.min_z && other.min_z <= self.max_z
-            || other.max_z >= self.min_z && other.max_z <= self.max_z
-        {
-            vec![
-                VolumeStep {
-                    volume_type: true,
-                    max_z: min(other.min_z - 1, self.max_z),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_z: max(other.min_z, self.min_z),
-                    max_z: min(other.max_z, self.max_z),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-                VolumeStep {
-                    volume_type: true,
-                    min_z: max(other.max_z + 1, self.min_z),
-                    ..self.clone()
-                }
-                .constrain_day_a(),
-            ]
-        } else {
-            vec![self.clone()]
-        }
     }
 
     fn calculate_volume(&self) -> usize {
         ((self.max_x - self.min_x + 1)
             * (self.max_y - self.min_y + 1)
             * (self.max_z - self.min_z + 1)) as usize
+    }
+
+    fn repeatedly_subtract_from(&self, to_subtract_list: &[Cuboid]) -> Vec<Cuboid> {
+        let mut ret = vec![self.clone()];
+        for vol_to_subtract in to_subtract_list.iter() {
+            ret = ret
+                .into_iter()
+                .filter(|volume| !volume.is_subset_of(vol_to_subtract))
+                .map(|volume| volume.subtract_volume_for_x(vol_to_subtract))
+                .flatten()
+                .collect::<Vec<Cuboid>>();
+        }
+        ret
     }
 }
 
@@ -218,74 +245,61 @@ impl Day22Setup {
         day22_parser::parse(input_str).unwrap()
     }
 
-    fn subtract_from_other(
-        &self,
-        to_be_subtracted: &[VolumeStep],
-        to_subtract: &[VolumeStep],
-    ) -> Vec<VolumeStep> {
+    fn subtract_from_other(to_be_subtracted: &[Cuboid], to_subtract: &[Cuboid]) -> Vec<Cuboid> {
         to_be_subtracted
             .iter()
-            .map(|vol_to_be| {
-                if to_subtract.is_empty() {
-                    vec![vol_to_be.clone()]
-                } else {
-                    to_subtract
-                        .iter()
-                        .map(|vol_to_subtract| vol_to_be.subtract_volume_for_x(vol_to_subtract))
-                        .flatten()
-                        .unique()
-                        .collect::<Vec<VolumeStep>>()
-                }
-            })
+            .map(|vol_to_be| vol_to_be.repeatedly_subtract_from(to_subtract))
             .flatten()
-            .unique()
-            .collect::<Vec<VolumeStep>>()
+            .collect::<Vec<Cuboid>>()
     }
 
-    fn run_steps(&self) -> Vec<VolumeStep> {
+    fn get_next_volume_step(&mut self) -> VolumeStep {
+        let ret = self.volume_steps[0].clone();
+        self.volume_steps = self.volume_steps[1..].to_vec();
+        ret
+    }
+
+    fn run_one_step(&mut self, resulting_volumes: &[Cuboid], check_day_a: bool) -> Vec<Cuboid> {
+        let step = self.get_next_volume_step();
+        if check_day_a && step.block.outside_day_a_limit() {
+            return resulting_volumes.to_vec();
+        }
+        let mut resulting_volumes =
+            Day22Setup::subtract_from_other(resulting_volumes, &[step.block.clone()]);
+        if step.volume_type {
+            resulting_volumes.push(step.block);
+        }
+        resulting_volumes
+    }
+
+    fn calculate_all_volumes_size(volumes: &[Cuboid]) -> usize {
+        volumes.iter().map(|v| v.calculate_volume()).sum::<usize>()
+    }
+
+    fn run_steps(&mut self, check_day_a: bool) -> Vec<Cuboid> {
         let mut resulting_volumes = vec![];
-        for step in self.volume_steps.iter() {
-            println!("Running step:{:?}", step);
-            let starting_volumes = vec![step.constrain_day_a()];
-            if starting_volumes[0].is_empty() {
-                continue;
-            }
-            if step.volume_type {
-                let additional_volumes =
-                    self.subtract_from_other(&starting_volumes, &resulting_volumes);
-                for volume in additional_volumes.into_iter() {
-                    println!("Adding volume {:?}", volume);
-                    resulting_volumes.push(volume);
-                }
-            } else {
-                resulting_volumes = self.subtract_from_other(&resulting_volumes, &starting_volumes);
-            }
-            println!(
-                "Volume after step: {}-{}",
-                resulting_volumes.len(),
-                resulting_volumes
-                    .iter()
-                    .map(|v| v.calculate_volume())
-                    .sum::<usize>()
-            );
+        while !self.volume_steps.is_empty() {
+            resulting_volumes = self.run_one_step(&resulting_volumes, check_day_a);
         }
         resulting_volumes
     }
 
     /// Calculate the part a response
-    pub fn calculate_day_a(self: &Day22Setup) -> usize {
-        let volumes = self.run_steps();
-        volumes.into_iter().map(|v| v.calculate_volume()).sum()
+    pub fn calculate_day_a(&mut self) -> usize {
+        let volumes = self.run_steps(true);
+        Day22Setup::calculate_all_volumes_size(&volumes)
     }
 
     /// Calculate the part b response
-    pub fn calculate_day_b(self: &Day22Setup) -> usize {
-        0
+    pub fn calculate_day_b(&mut self) -> usize {
+        let volumes = self.run_steps(false);
+        Day22Setup::calculate_all_volumes_size(&volumes)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::Cuboid;
     use crate::Day22Setup;
 
     #[test]
@@ -294,20 +308,137 @@ mod test {
     }
 
     #[test]
+    fn test_subtract_single() {
+        let volume_a = Cuboid {
+            min_x: 1,
+            max_x: 1,
+            min_y: 1,
+            max_y: 3,
+            min_z: 1,
+            max_z: 3,
+        };
+        let volume_b = Cuboid {
+            min_x: 1,
+            max_x: 3,
+            min_y: 1,
+            max_y: 3,
+            min_z: 1,
+            max_z: 3,
+        };
+        let subtracted_volumes = Day22Setup::subtract_from_other(&[volume_b], &[volume_a]);
+        let new_volume: usize = subtracted_volumes
+            .iter()
+            .map(|v| v.calculate_volume())
+            .sum();
+        assert_eq!(new_volume, 18);
+    }
+
+    #[test]
+    fn test_subtract_multiple() {
+        // we have 2 volumes with a gap of 1 between, and are trying to add a volume
+        // covering all 3.
+        //
+        // We should subtract both existing volumes from the new volume before adding, and
+        // end up with the new size.
+        let volume_a = Cuboid {
+            min_x: 1,
+            max_x: 1,
+            min_y: 1,
+            max_y: 3,
+            min_z: 1,
+            max_z: 3,
+        };
+        let volume_b = Cuboid {
+            min_x: 3,
+            max_x: 3,
+            min_y: 1,
+            max_y: 3,
+            min_z: 1,
+            max_z: 3,
+        };
+        let volume_c = Cuboid {
+            min_x: 1,
+            max_x: 3,
+            min_y: 1,
+            max_y: 3,
+            min_z: 1,
+            max_z: 3,
+        };
+        let subtracted_volumes =
+            Day22Setup::subtract_from_other(&[volume_c], &[volume_a, volume_b]);
+        let new_volume: usize = subtracted_volumes
+            .iter()
+            .map(|v| v.calculate_volume())
+            .sum();
+        assert_eq!(new_volume, 9);
+    }
+
+    #[test]
     fn test_day_a() {
-        let day22_setup = Day22Setup::new(include_str!("../test_data.txt"));
+        let mut day22_setup = Day22Setup::new(include_str!("../test_data.txt"));
         assert_eq!(day22_setup.calculate_day_a(), 39);
     }
 
     #[test]
     fn test_daya_larger() {
-        let day22_setup = Day22Setup::new(include_str!("../test_data2.txt"));
+        let mut day22_setup = Day22Setup::new(include_str!("../test_data2.txt"));
         assert_eq!(day22_setup.calculate_day_a(), 590784);
     }
 
     #[test]
+    fn test_daya_larger_step_by_step() {
+        let mut day22_setup = Day22Setup::new(include_str!("../test_data2.txt"));
+        let next = day22_setup.run_one_step(&[], true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 139590);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 210918);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 225476);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 328328);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 387734);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 420416);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 436132);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 478727);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 494759);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 494804);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 492164);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 534936);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 534936);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 567192,);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 567150);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 592167);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 588567);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 592902);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 590029);
+        let next = day22_setup.run_one_step(&next, true);
+        assert_eq!(Day22Setup::calculate_all_volumes_size(&next), 590784);
+    }
+
+    #[test]
+    fn test_day_a_with_b_input() {
+        let mut day22_setup = Day22Setup::new(include_str!("../test_data3.txt"));
+        assert_eq!(day22_setup.calculate_day_a(), 474140);
+    }
+
+    #[test]
     fn test_day_b() {
-        let day22_setup = Day22Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day22_setup.calculate_day_b(), 0);
+        let mut day22_setup = Day22Setup::new(include_str!("../test_data3.txt"));
+        assert_eq!(day22_setup.calculate_day_b(), 2758514936282235);
     }
 }
