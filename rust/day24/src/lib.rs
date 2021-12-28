@@ -1,10 +1,10 @@
 extern crate peg;
-use itertools::Itertools;
 
 pub struct Day24Setup {
     instructions: Vec<Inst>,
 }
 
+#[derive(Debug)]
 enum Reg {
     W,
     X,
@@ -13,6 +13,7 @@ enum Reg {
     Value(isize),
 }
 
+#[derive(Debug)]
 enum Inst {
     Inp(Reg),
     Add(Reg, Reg),
@@ -22,13 +23,132 @@ enum Inst {
     Eql(Reg, Reg),
 }
 
-struct ALU {
-    inputs: Vec<usize>,
+#[derive(Clone, Debug)]
+enum MonadInst {
+    Value(isize),
+    Input(usize),
+    Add(Box<MonadInst>, Box<MonadInst>),
+    Mul(Box<MonadInst>, Box<MonadInst>),
+    Div(Box<MonadInst>, Box<MonadInst>),
+    Mod(Box<MonadInst>, Box<MonadInst>),
+    Eql(Box<MonadInst>, Box<MonadInst>),
+}
+
+#[derive(Debug)]
+struct Alu {
     inputs_asked: usize,
-    w: isize,
-    x: isize,
-    y: isize,
-    z: isize,
+    possible_values_for_inputs: Vec<Vec<usize>>,
+    w: MonadInst,
+    x: MonadInst,
+    y: MonadInst,
+    z: MonadInst,
+}
+
+impl MonadInst {
+    fn is_zero(&self) -> bool {
+        matches!(self, MonadInst::Value(0))
+    }
+
+    fn is_one(&self) -> bool {
+        matches!(self, MonadInst::Value(1))
+    }
+
+    fn is_literal(&self) -> bool {
+        matches!(self, MonadInst::Value(_))
+    }
+
+    fn get_literal_value(&self) -> isize {
+        if let MonadInst::Value(val) = self {
+            *val
+        } else {
+            panic!("Must call get_literal_value on a MonadInst::Value")
+        }
+    }
+
+    fn literal_equal(&self, other: &MonadInst) -> MonadInst {
+        match (self, other) {
+            (MonadInst::Value(s), MonadInst::Value(o)) => {
+                if s == o {
+                    MonadInst::Value(1)
+                } else {
+                    MonadInst::Value(0)
+                }
+            }
+            _ => MonadInst::Value(0),
+        }
+    }
+
+    fn is_literal_invalid_for_input(&self) -> bool {
+        if let MonadInst::Value(val) = self {
+            !(1..=9).contains(val)
+        } else {
+            false
+        }
+    }
+
+    fn is_input(&self) -> bool {
+        matches!(self, MonadInst::Input(_))
+    }
+}
+
+impl std::ops::Add for &MonadInst {
+    type Output = MonadInst;
+    fn add(self, other: &MonadInst) -> MonadInst {
+        if self.is_zero() {
+            other.clone()
+        } else if other.is_zero() {
+            self.clone()
+        } else if self.is_literal() && other.is_literal() {
+            MonadInst::Value(self.get_literal_value() + other.get_literal_value())
+        } else {
+            MonadInst::Add(Box::new(self.clone()), Box::new(other.clone()))
+        }
+    }
+}
+
+impl std::ops::Mul for &MonadInst {
+    type Output = MonadInst;
+    fn mul(self, other: &MonadInst) -> MonadInst {
+        if self.is_zero() || other.is_zero() {
+            MonadInst::Value(0)
+        } else if self.is_one() {
+            other.clone()
+        } else if other.is_one() {
+            self.clone()
+        } else if self.is_literal() && other.is_literal() {
+            MonadInst::Value(self.get_literal_value() * other.get_literal_value())
+        } else {
+            MonadInst::Mul(Box::new(self.clone()), Box::new(other.clone()))
+        }
+    }
+}
+
+impl std::ops::Div for &MonadInst {
+    type Output = MonadInst;
+    fn div(self, other: &MonadInst) -> MonadInst {
+        if self.is_zero() {
+            MonadInst::Value(0)
+        } else if other.is_one() {
+            self.clone()
+        } else if self.is_literal() && other.is_literal() {
+            MonadInst::Value(self.get_literal_value() / other.get_literal_value())
+        } else {
+            MonadInst::Div(Box::new(self.clone()), Box::new(other.clone()))
+        }
+    }
+}
+
+impl std::ops::Rem for &MonadInst {
+    type Output = MonadInst;
+    fn rem(self, other: &MonadInst) -> MonadInst {
+        if self.is_zero() {
+            MonadInst::Value(0)
+        } else if self.is_literal() && other.is_literal() {
+            MonadInst::Value(self.get_literal_value() % other.get_literal_value())
+        } else {
+            MonadInst::Mod(Box::new(self.clone()), Box::new(other.clone()))
+        }
+    }
 }
 
 peg::parser! { grammar day24_parser() for str {
@@ -70,97 +190,106 @@ peg::parser! { grammar day24_parser() for str {
         }
 }}
 
-impl ALU {
-    fn new(inputs: Vec<usize>) -> ALU {
-        ALU {
-            inputs,
+impl Alu {
+    fn new() -> Alu {
+        let possible_values_for_inputs = vec![(1..=9).collect::<Vec<usize>>()];
+        Alu {
             inputs_asked: 0,
-            w: 0,
-            x: 0,
-            y: 0,
-            z: 0,
+            possible_values_for_inputs,
+            w: MonadInst::Value(0),
+            x: MonadInst::Value(0),
+            y: MonadInst::Value(0),
+            z: MonadInst::Value(0),
         }
     }
 
-    fn get_for_register(&self, register: &Reg) -> isize {
+    fn get_for_register(&self, register: &Reg) -> MonadInst {
         match register {
-            &Reg::W => self.w,
-            &Reg::X => self.x,
-            &Reg::Y => self.y,
-            &Reg::Z => self.z,
-            &Reg::Value(val) => val,
+            Reg::W => self.w.clone(),
+            Reg::X => self.x.clone(),
+            Reg::Y => self.y.clone(),
+            Reg::Z => self.z.clone(),
+            Reg::Value(val) => MonadInst::Value(*val),
         }
     }
 
-    fn set_for_register(&mut self, register: &Reg, value: isize) {
+    fn set_for_register(&mut self, register: &Reg, value: MonadInst) {
         match register {
-            &Reg::W => self.w = value,
-            &Reg::X => self.x = value,
-            &Reg::Y => self.y = value,
-            &Reg::Z => self.z = value,
-            &Reg::Value(_) => panic!("Cannot set to a value register"),
+            Reg::W => self.w = value,
+            Reg::X => self.x = value,
+            Reg::Y => self.y = value,
+            Reg::Z => self.z = value,
+            Reg::Value(_) => panic!("Cannot set to a value register"),
         }
     }
 
     fn input(&mut self, register: &Reg) -> bool {
-        self.set_for_register(register, self.inputs[self.inputs_asked] as isize);
+        self.set_for_register(register, MonadInst::Input(self.inputs_asked));
+        println!("Asking for inputs, and we look like: {:?}", self);
         self.inputs_asked += 1;
-        if self.z == 0 {
-            false
-        } else {
-            true
-        }
+        !self.z.is_zero()
     }
 
     fn add(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
-        let val = self.get_for_register(reg1) + self.get_for_register(reg2);
+        let val = &self.get_for_register(reg1) + &self.get_for_register(reg2);
         self.set_for_register(reg1, val);
         true
     }
 
     fn multiply(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
-        let val = self.get_for_register(reg1) + self.get_for_register(reg2);
+        let val = &self.get_for_register(reg1) * &self.get_for_register(reg2);
         self.set_for_register(reg1, val);
         true
     }
 
     fn divide(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
-        let val = self.get_for_register(reg1) / self.get_for_register(reg2);
+        let val = &self.get_for_register(reg1) / &self.get_for_register(reg2);
         self.set_for_register(reg1, val);
         true
     }
 
     fn modulo(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
-        let val = self.get_for_register(reg1) % self.get_for_register(reg2);
+        let val = &self.get_for_register(reg1) % &self.get_for_register(reg2);
         self.set_for_register(reg1, val);
         true
     }
 
     fn equal(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
-        let val = match self.get_for_register(reg1) == self.get_for_register(reg2) {
-            true => 1,
-            false => 0,
-        };
-        self.set_for_register(reg1, val);
+        // To do: reduce these to 1 or 0, but doing a binary split on possible values for the
+        // various types when doing so, and exploring all 1s/0s where a possible type still exists.
+        let left = self.get_for_register(reg1);
+        let right = self.get_for_register(reg2);
+        if left.is_literal() && right.is_literal() {
+            self.set_for_register(reg1, left.literal_equal(&right));
+        } else if left.is_input() && right.is_literal_invalid_for_input()
+            || right.is_input() && left.is_literal_invalid_for_input()
+        {
+            self.set_for_register(reg1, MonadInst::Value(0));
+        } else {
+            self.set_for_register(reg1, MonadInst::Eql(Box::new(left), Box::new(right)));
+        }
         true
     }
 
     fn run_instruction(&mut self, instruction: &Inst) -> bool {
         match instruction {
-            Inst::Inp(reg) => self.input(&reg),
-            Inst::Add(reg1, reg2) => self.add(&reg1, &reg2),
-            Inst::Mul(reg1, reg2) => self.multiply(&reg1, &reg2),
-            Inst::Div(reg1, reg2) => self.divide(&reg1, &reg2),
-            Inst::Mod(reg1, reg2) => self.modulo(&reg1, &reg2),
-            Inst::Eql(reg1, reg2) => self.equal(&reg1, &reg2),
+            Inst::Inp(reg) => self.input(reg),
+            Inst::Add(reg1, reg2) => self.add(reg1, reg2),
+            Inst::Mul(reg1, reg2) => self.multiply(reg1, reg2),
+            Inst::Div(reg1, reg2) => self.divide(reg1, reg2),
+            Inst::Mod(reg1, reg2) => self.modulo(reg1, reg2),
+            Inst::Eql(reg1, reg2) => self.equal(reg1, reg2),
         }
     }
 
-    fn run_instructions(&mut self, instructions: &Vec<Inst>) -> bool {
+    fn run_instructions(&mut self, instructions: &[Inst]) -> bool {
         for instruction in instructions {
+            println!("Adding instruction {:?} to ALU", instruction);
             self.run_instruction(instruction);
+            println!("ALU looks like: {:?}", self.inputs_asked);
         }
-        self.z == 0
+        self.z.is_zero();
+        true
     }
 }
 
@@ -206,7 +335,7 @@ impl Day24Setup {
             if count % 1000 == 0 {
                 println!("Trying number {}", self.build_actual_number(&ret[..]));
             }
-            let mut alu = ALU::new(ret.clone());
+            let mut alu = Alu::new();
             if alu.run_instructions(&self.instructions) {
                 found = true;
             } else {
