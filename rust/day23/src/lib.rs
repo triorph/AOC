@@ -1,11 +1,12 @@
 extern crate peg;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Day23Setup {
     locations: [Option<Amphipod>; 7],
-    stack_a: [Option<Amphipod>; 2],
-    stack_b: [Option<Amphipod>; 2],
-    stack_c: [Option<Amphipod>; 2],
-    stack_d: [Option<Amphipod>; 2],
+    stack_a: Vec<Option<Amphipod>>,
+    stack_b: Vec<Option<Amphipod>>,
+    stack_c: Vec<Option<Amphipod>>,
+    stack_d: Vec<Option<Amphipod>>,
     best_distance: Option<usize>,
 }
 
@@ -40,10 +41,10 @@ peg::parser! { grammar day23_parser() for str {
         "  #" a1:amphipod() "#" b1:amphipod() "#" c1:amphipod() "#" d1:amphipod() "#" " " * "\n" bottom()  "\n" * {
             Day23Setup {
                 locations: [None; 7],
-                stack_a: [Some(a1), Some(a2)],
-                stack_b: [Some(b1), Some(b2)],
-                stack_c: [Some(c1), Some(c2)],
-                stack_d: [Some(d1), Some(d2)],
+                stack_a: vec![Some(a1), Some(a2)],
+                stack_b: vec![Some(b1), Some(b2)],
+                stack_c: vec![Some(c1), Some(c2)],
+                stack_d: vec![Some(d1), Some(d2)],
                 best_distance: None
             }
         }
@@ -90,8 +91,9 @@ impl Amphipod {
 
 impl Point {
     fn manhattan_distance(&self, other: &Point) -> usize {
+        // Not technically manhattan distance, as we always sum the y values.
         (self.0 as isize - other.0 as isize).abs() as usize
-            + (self.1 as isize - other.1 as isize).abs() as usize
+            + (self.1 as isize + other.1 as isize).abs() as usize
     }
 }
 
@@ -139,21 +141,14 @@ impl Day23Setup {
 
     fn get_point_for_stack(&self, amph: &Amphipod, i: usize) -> Point {
         let x = amph.get_x_for_stack();
-        let y = match i {
-            // i is allowed to be 0 or 1, to be either bottom or top of its stack.
-            0 => 2,
-            1 => 1,
-            _ => unreachable!(),
-        };
+        let y = self.get_stack_for_amphipod(amph).len() - i;
         Point(x, y)
     }
 
     fn is_amph_stack_finished(&self, amph_stack: &Amphipod) -> bool {
-        self.get_stack_for_amphipod(amph_stack) == [Some(*amph_stack), Some(*amph_stack)]
-    }
-
-    fn is_amph_stack_empty(&self, amph_stack: &Amphipod) -> bool {
-        self.get_stack_for_amphipod(amph_stack) == [None, None]
+        self.get_stack_for_amphipod(amph_stack)
+            .iter()
+            .all(|amph| amph == &Some(*amph_stack))
     }
 
     fn finished(&self) -> bool {
@@ -166,23 +161,22 @@ impl Day23Setup {
         if let Some(other_distance) = self.best_distance {
             if distance_spent < other_distance {
                 self.best_distance = Some(distance_spent);
+                println!("Setting new best_distance: {}", distance_spent);
             }
         } else {
             self.best_distance = Some(distance_spent);
+            println!("Setting new best_distance: {}", distance_spent);
         }
     }
 
     fn set_stack_at_location_to_null(&mut self, location: &Point) {
         let amph = Amphipod::from_x_location(location.0);
-        let amph_index = match location.1 {
-            1 => 1,
-            2 => 0,
-            _ => unreachable!(),
-        };
+        let amph_stack = self.get_stack_for_amphipod(&amph);
+        let amph_index = amph_stack.len() - location.1;
         self.get_mut_stack_for_amphipod(&amph)[amph_index] = None;
     }
 
-    fn stack_can_be_moved_to(&self, amph_stack: &Amphipod) -> bool {
+    fn stack_is_only_none_or_self(&self, amph_stack: &Amphipod) -> bool {
         self.get_stack_for_amphipod(amph_stack)
             .iter()
             .all(|val| val.is_none() || val == &Some(*amph_stack))
@@ -190,7 +184,7 @@ impl Day23Setup {
 
     fn can_move_amph_to_its_stack(&self, i: usize) -> bool {
         if let Some(amph) = self.locations[i] {
-            if self.stack_can_be_moved_to(&amph) {
+            if self.stack_is_only_none_or_self(&amph) {
                 let point = Day23Setup::get_point_at_location(i);
                 let target_x = amph.get_x_for_stack();
                 let points_to_consider = if point.0 > target_x {
@@ -218,32 +212,26 @@ impl Day23Setup {
     }
 
     fn set_amphipod_in_stack(&mut self, amph: &Amphipod) -> Point {
-        let stack = self.get_mut_stack_for_amphipod(amph);
-        if stack[0].is_none() {
-            stack[0] = Some(*amph);
-            self.get_point_for_stack(amph, 0)
-        } else if stack[1].is_none() {
-            stack[1] = Some(*amph);
-            self.get_point_for_stack(amph, 1)
-        } else {
-            unreachable!();
-        }
+        let index = self.set_amph_to_its_stack_and_get_index(amph);
+        self.get_point_for_stack(amph, index)
+    }
+
+    fn move_to_stack_from_location(&mut self, i: usize) -> (Point, Amphipod, usize) {
+        let old_amphipod = self.locations[i].expect("Already checked is Some at this point");
+        let new_location = self.set_amphipod_in_stack(&old_amphipod);
+        self.locations[i] = None;
+        let extra_distance = new_location.manhattan_distance(&Day23Setup::get_point_at_location(i))
+            * old_amphipod.get_energy_per_step();
+        (new_location, old_amphipod, extra_distance)
     }
 
     fn try_move_from_location(&mut self, i: usize, distance_spent: usize) {
-        if self.can_move_amph_to_its_stack(i) {
-            if let Some(amph) = self.locations[i] {
-                let old_amphipod = amph;
-                let new_location = self.set_amphipod_in_stack(&amph);
-                self.locations[i] = None;
-                let extra_distance_spent = new_location
-                    .manhattan_distance(&Day23Setup::get_point_at_location(i))
-                    * amph.get_energy_per_step();
-                self.dfs_find_amphipod_result(distance_spent + extra_distance_spent);
-                // cleanup
-                self.locations[i] = Some(old_amphipod);
-                self.set_stack_at_location_to_null(&new_location);
-            }
+        if self.can_move_amph_to_its_stack(i) && self.locations[i].is_some() {
+            let (new_location, old_amphipod, extra_distance) = self.move_to_stack_from_location(i);
+            self.dfs_find_amphipod_result(distance_spent + extra_distance);
+            // cleanup
+            self.locations[i] = Some(old_amphipod);
+            self.set_stack_at_location_to_null(&new_location);
         }
     }
 
@@ -266,6 +254,7 @@ impl Day23Setup {
             .map(|(i, _)| *i)
             .collect::<Vec<usize>>();
         points_right.sort_unstable();
+
         for i in points_left.into_iter() {
             if self.locations[i].is_none() {
                 ret.push(i);
@@ -283,51 +272,130 @@ impl Day23Setup {
         ret
     }
 
-    fn get_top_of_stack(&mut self, amph_stack: &Amphipod) -> Option<Amphipod> {
-        todo!()
+    fn get_top_of_stack(&self, amph_stack: &Amphipod) -> Option<Amphipod> {
+        let stack = self.get_stack_for_amphipod(amph_stack);
+        for i in (0..stack.len()).rev() {
+            if stack[i].is_some() {
+                return stack[i];
+            }
+        }
+        None
+    }
+
+    fn nothing_between_amph_stacks(
+        &self,
+        amph_stack_1: &Amphipod,
+        amph_stack_2: &Amphipod,
+    ) -> bool {
+        let x_1 = amph_stack_1.get_x_for_stack();
+        let x_2 = amph_stack_2.get_x_for_stack();
+        let x_min = std::cmp::min(x_1, x_2);
+        let x_max = std::cmp::max(x_1, x_2);
+        for (i, val) in self.locations.iter().enumerate() {
+            let loc = Day23Setup::get_point_at_location(i);
+            if (x_min..=x_max).contains(&loc.0) && val.is_some() {
+                return false;
+            }
+        }
+        true
     }
 
     fn can_amph_move_directly_to_stack(&self, amph_stack: &Amphipod) -> bool {
-        todo!()
+        let amph = self.get_top_of_stack(amph_stack);
+        if let Some(amph) = amph {
+            if &amph == amph_stack {
+                false
+            } else {
+                !self.is_amph_stack_finished(&amph)
+                    && self.stack_is_only_none_or_self(&amph)
+                    && self.nothing_between_amph_stacks(amph_stack, &amph)
+            }
+        } else {
+            false
+        }
     }
 
     fn can_move_from_amph_stack(&self, amph_stack: &Amphipod) -> bool {
-        self.get_top_of_stack(amph_stack) != Some(amph_stack)
+        let top = self.get_top_of_stack(amph_stack);
+        !self.stack_is_only_none_or_self(amph_stack)
+            && top != None
             && !self
                 .get_locations_amph_stack_can_move_to(amph_stack)
                 .is_empty()
-            && !self.can_amph_move_directly_to_stack(amph_stack)
+    }
+
+    fn set_amph_null_and_get_index_and_old(&mut self, amph_stack: &Amphipod) -> (usize, Amphipod) {
+        let amph_stack = self.get_mut_stack_for_amphipod(amph_stack);
+        let mut amph_index = amph_stack.len() - 1;
+        while amph_stack[amph_index].is_none() {
+            if amph_index == 0 {
+                unreachable!();
+            } else {
+                amph_index -= 1;
+            }
+        }
+        let amph = amph_stack[amph_index];
+        amph_stack[amph_index] = None;
+        (
+            amph_index,
+            amph.expect("Have checked the index is Some by this point"),
+        )
+    }
+
+    fn set_amph_to_its_stack_and_get_index(&mut self, amph: &Amphipod) -> usize {
+        let amph_stack = self.get_mut_stack_for_amphipod(amph);
+        let mut amph_index = 0;
+        while amph_stack[amph_index].is_some() {
+            if amph_index >= amph_stack.len() - 1 {
+                unreachable!();
+            } else {
+                amph_index += 1;
+            }
+        }
+        amph_stack[amph_index] = Some(*amph);
+        amph_index
+    }
+
+    fn move_from_amph_stack_to_location(
+        &mut self,
+        amph_stack: &Amphipod,
+        i: usize,
+    ) -> (usize, Amphipod, usize) {
+        let (amph_index, amph) = self.set_amph_null_and_get_index_and_old(amph_stack);
+        self.locations[i] = Some(amph);
+        let location = Day23Setup::get_point_at_location(i);
+        let point = self.get_point_for_stack(amph_stack, amph_index);
+        let extra_distance = location.manhattan_distance(&point) * amph.get_energy_per_step();
+        (amph_index, amph, extra_distance)
     }
 
     fn move_from_amph_stack(&mut self, amph_stack: &Amphipod, distance_spent: usize) {
+        // moving directly to an amph stack is the same as moving to the location, and then moving
+        // to the stack. This just duplicates effort that the algorithm is required to take.
+        /* if self.can_amph_move_directly_to_stack(amph_stack) {
+            let (amph_index, amph) = self.set_amph_null_and_get_index_and_old(amph_stack);
+            let target_index = self.set_amph_to_its_stack_and_get_index(&amph);
+            let start = self.get_point_for_stack(amph_stack, amph_index);
+            let end = self.get_point_for_stack(&amph, target_index);
+            let extra_distance = start.manhattan_distance(&end) * amph.get_energy_per_step();
+            self.dfs_find_amphipod_result(distance_spent + extra_distance);
+            self.get_mut_stack_for_amphipod(amph_stack)[amph_index] = Some(amph);
+            self.get_mut_stack_for_amphipod(&amph)[target_index] = None;
+        } */
         if self.can_move_from_amph_stack(amph_stack) {
-            todo!(); // try moving to other amph stacks directly
             for i in self.get_locations_amph_stack_can_move_to(amph_stack) {
-                let (amph_index, amph) = {
-                    let amph_stack = self.get_mut_stack_for_amphipod(amph_stack);
-                    let amph_index = if amph_stack[1].is_some() {
-                        1
-                    } else if (amph_stack[0]).is_some() {
-                        0
-                    } else {
-                        unreachable!()
-                    };
-                    let amph = amph_stack[amph_index];
-                    amph_stack[amph_index] = None;
-                    (amph_index, amph)
-                };
-
-                self.locations[i] = amph;
-                todo!(); // calculate the additional distance spent in the move
-                self.dfs_find_amphipod_result(distance_spent);
+                let (amph_index, amph, extra_distance) =
+                    self.move_from_amph_stack_to_location(amph_stack, i);
+                self.dfs_find_amphipod_result(distance_spent + extra_distance);
                 //cleanup
                 self.locations[i] = None;
-                self.get_mut_stack_for_amphipod(amph_stack)[amph_index] = amph;
+                self.get_mut_stack_for_amphipod(amph_stack)[amph_index] = Some(amph);
             }
         }
     }
 
     fn dfs_find_amphipod_result(&mut self, distance_spent: usize) {
+        println!("exploring dfs amph: {:?}, {}", self, distance_spent);
         if self.finished() {
             self.set_finished(distance_spent);
             return;
@@ -338,11 +406,13 @@ impl Day23Setup {
             }
         }
         for i in 0..self.locations.len() {
+            println!("Trying to find location {}", i);
             if self.locations[i].is_some() {
                 self.try_move_from_location(i, distance_spent);
             }
         }
         for amph_stack in Amphipod::all() {
+            println!("Trying to move from stack: {:?}", amph_stack);
             self.move_from_amph_stack(&amph_stack, distance_spent);
         }
     }
@@ -354,9 +424,39 @@ impl Day23Setup {
             .expect("Should have found a distance that gets to the goal")
     }
 
+    fn add_day_b_entries(&mut self) {
+        self.stack_a = vec![
+            self.stack_a[0],
+            Some(Amphipod::Desert),
+            Some(Amphipod::Desert),
+            self.stack_a[1],
+        ];
+        self.stack_b = vec![
+            self.stack_a[0],
+            Some(Amphipod::Bronze),
+            Some(Amphipod::Copper),
+            self.stack_a[1],
+        ];
+        self.stack_c = vec![
+            self.stack_a[0],
+            Some(Amphipod::Amber),
+            Some(Amphipod::Bronze),
+            self.stack_a[1],
+        ];
+        self.stack_d = vec![
+            self.stack_a[0],
+            Some(Amphipod::Copper),
+            Some(Amphipod::Amber),
+            self.stack_a[1],
+        ];
+    }
+
     /// Calculate the part b response
     pub fn calculate_day_b(self: &mut Day23Setup) -> usize {
-        0
+        self.add_day_b_entries();
+        self.dfs_find_amphipod_result(0);
+        self.best_distance
+            .expect("Should have found a distance that gets to the goal")
     }
 }
 
@@ -387,14 +487,88 @@ mod test {
     }
 
     #[test]
+    fn test_day_a_steps() {
+        let mut day23_setup = Day23Setup::new(include_str!("../test_data.txt"));
+        // Move B from stack C to position 2
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Copper));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Copper)
+            .contains(&2));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Copper, 2);
+        // Move C from stack B to Stack C
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Bronze));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Bronze)
+            .contains(&3));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Bronze, 3);
+        assert!(day23_setup.can_move_amph_to_its_stack(3));
+        day23_setup.move_to_stack_from_location(3);
+        //Move D from stack B to position 3
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Bronze));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Bronze)
+            .contains(&3));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Bronze, 3);
+        //Move B from position 2 to stack B
+        assert!(day23_setup.can_move_amph_to_its_stack(2));
+        day23_setup.move_to_stack_from_location(2);
+        //Move B from stack A to stack B
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Amber));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Amber)
+            .contains(&2));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Amber, 2);
+        assert!(day23_setup.can_move_amph_to_its_stack(2));
+        day23_setup.move_to_stack_from_location(2);
+        //Move D from stack D to position 4
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Desert));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Desert)
+            .contains(&4));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Desert, 4);
+        //Move A from stack A to position 5
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Desert));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Desert)
+            .contains(&5));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Desert, 5);
+        //Move D from position 4 to stack D
+        assert!(day23_setup.can_move_amph_to_its_stack(4));
+        day23_setup.move_to_stack_from_location(4);
+        //Move D from position 3 to stack D
+        assert!(day23_setup.can_move_amph_to_its_stack(3));
+        day23_setup.move_to_stack_from_location(3);
+        //Move A from position 5 to stack A
+        assert!(day23_setup.can_move_amph_to_its_stack(5));
+        day23_setup.move_to_stack_from_location(5);
+        // Check is finished
+        assert!(day23_setup.finished());
+    }
+
+    #[test]
     fn test_day_a() {
         let mut day23_setup = Day23Setup::new(include_str!("../test_data.txt"));
         assert_eq!(day23_setup.calculate_day_a(), 12521);
     }
 
     #[test]
+    fn test_day_b_steps() {
+        let mut day23_setup = Day23Setup::new(include_str!("../test_data.txt"));
+        day23_setup.add_day_b_entries();
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Desert));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Desert)
+            .contains(&6));
+        day23_setup.move_from_amph_stack_to_location(&Amphipod::Desert, 6);
+        assert!(day23_setup.can_move_from_amph_stack(&Amphipod::Copper));
+        assert!(day23_setup
+            .get_locations_amph_stack_can_move_to(&Amphipod::Copper)
+            .contains(&5));
+    }
+
+    #[test]
     fn test_day_b() {
         let mut day23_setup = Day23Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day23_setup.calculate_day_b(), 0);
+        assert_eq!(day23_setup.calculate_day_b(), 44169);
     }
 }
