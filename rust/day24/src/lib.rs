@@ -1,4 +1,5 @@
 extern crate peg;
+use std::collections::HashSet;
 
 pub struct Day24Setup {
     instructions: Vec<Inst>,
@@ -30,14 +31,15 @@ enum MonadInst {
     Add(Box<MonadInst>, Box<MonadInst>),
     Mul(Box<MonadInst>, Box<MonadInst>),
     Div(Box<MonadInst>, Box<MonadInst>),
-    Mod(Box<MonadInst>, Box<MonadInst>),
-    Eql(Box<MonadInst>, Box<MonadInst>),
+    // Mod(Box<MonadInst>, Box<MonadInst>),
+    // Eql(Box<MonadInst>, Box<MonadInst>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Alu {
     inputs_asked: usize,
     possible_values_for_inputs: Vec<Vec<usize>>,
+    equal_stack: Vec<usize>,
     w: MonadInst,
     x: MonadInst,
     y: MonadInst,
@@ -89,6 +91,61 @@ impl MonadInst {
     fn is_input(&self) -> bool {
         matches!(self, MonadInst::Input(_))
     }
+
+    fn is_add_pair(&self) -> bool {
+        if let MonadInst::Add(_, right) = self {
+            (**right).is_literal()
+        } else {
+            false
+        }
+    }
+
+    fn get_add_pairs(&self) -> (MonadInst, MonadInst) {
+        if let MonadInst::Add(left, right) = self {
+            return ((**left).clone(), (**right).clone());
+        }
+        panic!("Called get_add_pairs on a non-add-pair")
+    }
+
+    fn is_26(&self) -> bool {
+        matches!(self, MonadInst::Value(26))
+    }
+
+    fn is_26_tuple(&self) -> bool {
+        if let MonadInst::Add(left, _) = self {
+            if let MonadInst::Mul(_, right2) = &**left {
+                return (right2).is_26();
+            }
+        }
+        false
+    }
+
+    fn get_left_26_tuple(&self) -> MonadInst {
+        if let MonadInst::Add(left, _) = self {
+            if let MonadInst::Mul(left2, _) = &**left {
+                return (**left2).clone();
+            }
+        }
+        panic!("No left 26 tuple to get");
+    }
+
+    fn get_right_26_tuple(&self) -> MonadInst {
+        if let MonadInst::Add(_, right) = self {
+            return (**right).clone();
+        }
+        panic!("No right 26 tuple to get");
+    }
+
+    fn evaluate(&self, values: &[usize]) -> isize {
+        match self {
+            MonadInst::Input(i) => values[*i] as isize,
+            MonadInst::Value(val) => *val,
+            MonadInst::Add(left, right) => left.evaluate(values) + right.evaluate(values),
+            MonadInst::Mul(left, right) => left.evaluate(values) * right.evaluate(values),
+            MonadInst::Div(left, right) => left.evaluate(values) / right.evaluate(values),
+            // MonadInst::Mod(left, right) => left.evaluate(values) % right.evaluate(values),
+        }
+    }
 }
 
 impl std::ops::Add for &MonadInst {
@@ -100,6 +157,14 @@ impl std::ops::Add for &MonadInst {
             self.clone()
         } else if self.is_literal() && other.is_literal() {
             MonadInst::Value(self.get_literal_value() + other.get_literal_value())
+        } else if other.is_literal() && self.is_add_pair() {
+            let (left, right) = self.get_add_pairs();
+            MonadInst::Add(
+                Box::new(left),
+                Box::new(MonadInst::Value(
+                    right.get_literal_value() + other.get_literal_value(),
+                )),
+            )
         } else {
             MonadInst::Add(Box::new(self.clone()), Box::new(other.clone()))
         }
@@ -132,6 +197,8 @@ impl std::ops::Div for &MonadInst {
             self.clone()
         } else if self.is_literal() && other.is_literal() {
             MonadInst::Value(self.get_literal_value() / other.get_literal_value())
+        } else if other.is_26() && self.is_26_tuple() {
+            self.get_left_26_tuple()
         } else {
             MonadInst::Div(Box::new(self.clone()), Box::new(other.clone()))
         }
@@ -145,8 +212,11 @@ impl std::ops::Rem for &MonadInst {
             MonadInst::Value(0)
         } else if self.is_literal() && other.is_literal() {
             MonadInst::Value(self.get_literal_value() % other.get_literal_value())
+        } else if other.is_26() && self.is_26_tuple() {
+            self.get_right_26_tuple()
         } else {
-            MonadInst::Mod(Box::new(self.clone()), Box::new(other.clone()))
+            // MonadInst::Mod(Box::new(self.clone()), Box::new(other.clone()))
+            self.clone()
         }
     }
 }
@@ -190,16 +260,63 @@ peg::parser! { grammar day24_parser() for str {
         }
 }}
 
-impl Alu {
+struct PossibleValueIterator<'a> {
+    alu: &'a Alu,
+    start_position: usize,
+    current_position: Vec<usize>,
+}
+
+impl<'a> Iterator for PossibleValueIterator<'a> {
+    type Item = Vec<usize>;
+    fn next(&mut self) -> Option<Vec<usize>> {
+        for i in (self.start_position..(self.current_position.len())).rev() {
+            if self.current_position[i] >= self.alu.possible_values_for_inputs[i].len() - 1 {
+                self.current_position[i] = 0;
+            } else {
+                self.current_position[i] += 1;
+                return Some(self.get_values_by_index());
+            }
+        }
+        None
+    }
+}
+
+impl<'a> PossibleValueIterator<'a> {
+    fn get_values_by_index(&self) -> Vec<usize> {
+        let mut ret = vec![];
+        for (i, j) in self.current_position.iter().enumerate() {
+            ret.push(self.alu.possible_values_for_inputs[i][*j]);
+        }
+        ret
+    }
+}
+
+impl<'a> Alu {
     fn new() -> Alu {
-        let possible_values_for_inputs = vec![(1..=9).collect::<Vec<usize>>()];
+        let possible_values_for_inputs = vec![(1..=9).collect::<Vec<usize>>(); 14];
         Alu {
             inputs_asked: 0,
             possible_values_for_inputs,
+            equal_stack: vec![],
             w: MonadInst::Value(0),
             x: MonadInst::Value(0),
             y: MonadInst::Value(0),
             z: MonadInst::Value(0),
+        }
+    }
+
+    fn iter(&'a self) -> PossibleValueIterator<'a> {
+        let mut current_position = vec![];
+        for i in 0..self.inputs_asked - 2 {
+            current_position.push(self.possible_values_for_inputs[i].len() - 1);
+        }
+        for _ in 0..2 {
+            current_position.push(0);
+        }
+        PossibleValueIterator {
+            start_position: self.inputs_asked - 2,
+            alu: self,
+            current_position,
         }
     }
 
@@ -227,7 +344,7 @@ impl Alu {
         self.set_for_register(register, MonadInst::Input(self.inputs_asked));
         println!("Asking for inputs, and we look like: {:?}", self);
         self.inputs_asked += 1;
-        !self.z.is_zero()
+        true
     }
 
     fn add(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
@@ -254,11 +371,37 @@ impl Alu {
         true
     }
 
-    fn equal(&mut self, reg1: &Reg, reg2: &Reg) -> bool {
+    fn reduce_possibilities(&mut self, reg1: &Reg, reg2: &Reg, expected_value: bool) -> bool {
+        // returns false if any digit gets reduced to having no possible values.
+        let left = self.get_for_register(reg1);
+        let right = self.get_for_register(reg2);
+        let possible_values: Vec<Vec<usize>> = self
+            .iter()
+            .filter(|values| (left.evaluate(values) == right.evaluate(values)) == expected_value)
+            .collect();
+        for i in (self.inputs_asked - 2)..self.inputs_asked {
+            let found = possible_values
+                .iter()
+                .map(|v| v[i])
+                .collect::<HashSet<usize>>();
+            self.possible_values_for_inputs[i] = (&self.possible_values_for_inputs[i])
+                .iter()
+                .copied()
+                .filter(|val| found.contains(val))
+                .collect::<Vec<usize>>()
+        }
+        self.possible_values_for_inputs
+            .iter()
+            .all(|p| !p.is_empty())
+    }
+
+    fn equal(&mut self, reg1: &Reg, reg2: &Reg, instructions: &[Inst], i: usize) -> bool {
         // To do: reduce these to 1 or 0, but doing a binary split on possible values for the
         // various types when doing so, and exploring all 1s/0s where a possible type still exists.
         let left = self.get_for_register(reg1);
         let right = self.get_for_register(reg2);
+
+        println!("Checking equality of {:?}, {:?}", left, right);
         if left.is_literal() && right.is_literal() {
             self.set_for_register(reg1, left.literal_equal(&right));
         } else if left.is_input() && right.is_literal_invalid_for_input()
@@ -266,29 +409,47 @@ impl Alu {
         {
             self.set_for_register(reg1, MonadInst::Value(0));
         } else {
-            self.set_for_register(reg1, MonadInst::Eql(Box::new(left), Box::new(right)));
+            // At this point, all the equals are: input(i-1) + b == input( i)
+            let mut clone_with_equal_1 = self.clone();
+            if clone_with_equal_1.reduce_possibilities(reg1, reg2, true) {
+                println!("Equality is possibly true");
+                clone_with_equal_1.set_for_register(reg1, MonadInst::Value(1));
+                clone_with_equal_1.equal_stack.push(1);
+                clone_with_equal_1.run_instructions(instructions, i + 1);
+            }
+            let ret = self.reduce_possibilities(reg1, reg2, false);
+            self.equal_stack.push(0);
+            self.set_for_register(reg1, MonadInst::Value(0));
+            println!("Equality is false, {}", ret);
+            return ret;
         }
         true
     }
 
-    fn run_instruction(&mut self, instruction: &Inst) -> bool {
-        match instruction {
+    fn run_instruction(&mut self, instructions: &[Inst], i: usize) -> bool {
+        match &instructions[i] {
             Inst::Inp(reg) => self.input(reg),
             Inst::Add(reg1, reg2) => self.add(reg1, reg2),
             Inst::Mul(reg1, reg2) => self.multiply(reg1, reg2),
             Inst::Div(reg1, reg2) => self.divide(reg1, reg2),
             Inst::Mod(reg1, reg2) => self.modulo(reg1, reg2),
-            Inst::Eql(reg1, reg2) => self.equal(reg1, reg2),
+            Inst::Eql(reg1, reg2) => self.equal(reg1, reg2, instructions, i),
         }
     }
 
-    fn run_instructions(&mut self, instructions: &[Inst]) -> bool {
-        for instruction in instructions {
-            println!("Adding instruction {:?} to ALU", instruction);
-            self.run_instruction(instruction);
-            println!("ALU looks like: {:?}", self.inputs_asked);
+    fn run_instructions(&mut self, instructions: &[Inst], start: usize) -> bool {
+        for i in start..(instructions.len()) {
+            if !self.run_instruction(instructions, i) {
+                return false;
+            }
         }
-        self.z.is_zero();
+        println!("Got to end of instructions: {:?}", self);
+        if self.z.is_zero() {
+            println!(
+                "Got a zero for the final result, with equal stack: {:?}",
+                self.equal_stack
+            );
+        }
         true
     }
 }
@@ -336,7 +497,7 @@ impl Day24Setup {
                 println!("Trying number {}", self.build_actual_number(&ret[..]));
             }
             let mut alu = Alu::new();
-            if alu.run_instructions(&self.instructions) {
+            if alu.run_instructions(&self.instructions, 0) {
                 found = true;
             } else {
                 ret = self.increment_actual_number(ret);
@@ -363,12 +524,12 @@ mod test {
     #[test]
     fn test_day_a() {
         let day24_setup = Day24Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day24_setup.calculate_day_a(), 0);
+        assert_eq!(day24_setup.calculate_day_a(), 41299994879959);
     }
 
     #[test]
     fn test_day_b() {
         let day24_setup = Day24Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day24_setup.calculate_day_b(), 0);
+        assert_eq!(day24_setup.calculate_day_b(), 11189561113216);
     }
 }

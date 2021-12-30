@@ -1,0 +1,262 @@
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25 // x = 1, y = 25, w = inp, z = 0
+mul y x  // y = 25
+add y 1  // y = 26
+mul z y // z = 0
+mul y 0  // y = 0
+add y w // y = inp
+add y 15 // y = inp + 15
+mul y x // y = inp + 15
+add z y // z = inp + 15
+inp w  // w = inp2
+mul x 0  // x = 0
+add x z  // x = inp1 + 15
+mod x 26  // x = inp1 + 15
+div z 1  // z = inp + 15
+add x 24 //x = inp1 + 39
+eql x w  // x inp1 + 39 == inp2, so x = 0.
+eql x 0  // x = 1
+mul y 0
+add y 25 // y = 25
+mul y x  // y = 25
+add y 1  // y = 26
+mul z y  / z = 26 * (inp1 + 15)
+mul y 0
+add y w  // y = inp2
+add y 8  // y = inp2 + 8
+mul y x  // y = inp2 + 8
+add z y  // z = 26 * (inp1 + 15) + inp2 + 8
+inp w  // w = inp3
+mul x 0
+add x z  // x = 26 * (inp1 + 15) + inp2 + 8
+mod x 26  // x = inp2 + 8
+div z 1 // z = 26 * (inp1 + 15) + inp2 + 8
+add x 15  // x = inp2 + 23
+eql x w // inp2 + 23 == inp3, so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25 // y = 25
+mul y x // y = 25
+add y 1 // y = 26
+mul z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8)
+mul y 0
+add y w // y = inp3
+add y 2 // y = inp3 + 2
+mul y x
+add z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8) + inp3 + 2
+inp w // w = inp4
+mul x 0
+add x z // x =  26 * (26 * (inp1 + 15) + inp2 + 8) + inp3 + 2
+mod x 26  // x = inp3 + 2
+div z 26 // z = (26 * (inp1 + 15) + inp2 + 8)
+add x -9 // x = inp3 - 7
+eql x w  // inp3 - 7 == inp4 (possible for 9=2 or 8=1), lets assume true for now, so x = 1.
+eql x 0 // x = 0
+mul y 0
+add y 25 //
+mul y x // y = 0
+add y 1 // y = 1
+mul z y  // z = 26 * (inp1 + 15) + inp2 + 8
+mul y 0
+add y w // y = inp4
+add y 6 // y = inp4 + 6
+mul y x // y = 0
+add z y // z = 26 * (inp1 + 15) + inp2 + 8
+inp w // w = inp5
+mul x 0
+add x z // x = 26 * (inp1 + 15) + inp2 + 8
+mod x 26  // x = inp2 + 8
+div z 1
+add x 15 // x = inp2 + 23
+eql x w // inp2 + 23 == inp5, always false so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8)
+mul y 0
+add y w
+add y 13 // y = inp5 + 13
+mul y x
+add z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13
+inp w // w = inp6
+mul x 0
+add x z
+mod x 26 // x = inp5 + 13
+div z 1
+add x 10 // x = inp5 + 23
+eql x w // inp5 + 23 == inp6, always false so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z = 26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 )
+mul y 0
+add y w // y = inp6
+add y 4
+mul y x // y = inp6 + 4
+add z y // z = 26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4
+inp w // w = inp7
+mul x 0
+add x z
+mod x 26//
+div z 1
+add x 14 // x = inp6 + 18
+eql x w  // inp6 + 18 == inp7, always false so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z = 26 * (26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4)
+mul y 0
+add y w
+add y 1 // y = inp7 + 1
+mul y x
+add z y // z = 26 * (26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4)  + inp7 + 1
+inp w // w = inp8
+mul x 0
+add x z
+mod x 26 // x = inp7 + 1
+div z 26 // z = 26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4
+add x -5 // x = inp7 - 4
+eql x w // inp7 - 4 = inp8, true for 5->9 etc. Lets assume true and continue. x = 1
+eql x 0 // x = 0
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 1
+mul z y
+mul y 0
+add y w
+add y 9
+mul y x  // y = 0
+add z y //z =  26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4
+inp w // w = inp9
+mul x 0
+add x z
+mod x 26 // x = inp6 + 4
+div z 1 //
+add x 14 // x = inp6 + 18
+eql x w // inp6 + 18 == inp9, false, so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y  // z = 26 * (26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4)
+mul y 0
+add y w
+add y 5 // y = inp9 + 5
+mul y x
+add z y // z = = 26 * (26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4) + inp9 + 5
+inp w // w = inp10
+mul x 0
+add x z
+mod x 26 // x = inp9 + 5
+div z 26 // z = 26 * ( 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13 ) + inp6 + 4
+add x -7 // x = inp9 - 2
+eql x w // inp9 -2 == inp10, true for 7 -> 9, lets assume true so x = 1
+eql x 0 // x = 0
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 1
+mul z y
+mul y 0
+add y w
+add y 13
+mul y x // y = 0
+add z y
+inp w // w = inp11
+mul x 0
+add x z
+mod x 26 // x = inp6 + 4
+div z 26  // z =  26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13
+add x -24 // x = inp6 - 20
+eql x w // inp6 - 20 == inp11, always false so x = 1
+eql x 0 // x = 0
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z =  26 * (26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13)
+mul y 0
+add y w
+add y 9 // y = inp11 + 9
+mul y x
+add z y // z =   26 * (26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13) + inp11 + 9
+inp w // w = inp12
+mul x 0
+add x z
+mod x 26 // x = inp11 + 9
+div z 26 // z = 26 * (26 * (inp1 + 15) + inp2 + 8) + inp5 + 13
+add x -10 x = inp11 - 1
+eql x w // inp11 - 1 == inp10, true for 8->9. Lets assume true, so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x // y = 0
+add z y
+inp w // w = inp12
+mul x 0
+add x z
+mod x 26 // x = inp5 + 13
+div z 26 // z = 26 * (inp1 + 15) + inp2 + 8
+add x -1 // x = inp5 + 12
+eql x w // inp5 + 12 == inp12, always false, so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8)
+mul y 0
+add y w
+add y 2
+mul y x // y = inp12 + 2
+add z y // z =  26 * (26 * (inp1 + 15) + inp2 + 8) + inp12 + 2
+inp w // w = inp13
+mul x 0
+add x z
+mod x 26 // x = inp12 + 2
+div z 26 // z = 26 * (inp1 + 15) + inp2 + 8
+add x -11 //x = inp12 - 9
+eql x w // inp12 - 9 == inp13, always false (although nearly), so x = 0
+eql x 0 // x = 1
+mul y 0
+add y 25
+mul y x
+add y 1 // y = 26
+mul z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8)
+mul y 0
+add y w
+add y 2
+mul y x // y = inp13 + 2
+add z y // z = 26 * (26 * (inp1 + 15) + inp2 + 8) inp13 + 2
+
+Things we have worked out:
+0 = 26 * (26 * (inp1 + 15) + inp2 + 8)  + 2 , no values of inp1 or inp2 make this true
+inp3 - 7 = inp4
+inp7 - 4 = inp8
+inp9 - 2 = inp10
+
+everything else is unneeded for the final answer, so presumably is 9.
+
+
