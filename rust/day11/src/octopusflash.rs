@@ -1,24 +1,17 @@
 use crate::octopus::Octopus;
-use crate::parser::day11_parser;
 use crate::point::Point;
 use itertools::Itertools;
 
 #[derive(Clone, Debug)]
 pub struct OctopusFlashSetup {
-    pub octopi: [Octopus; 100],
+    octopi: [Octopus; 100],
+}
+
+pub fn from_octopi(octopi: [Octopus; 100]) -> OctopusFlashSetup {
+    OctopusFlashSetup { octopi }
 }
 
 impl OctopusFlashSetup {
-    /// Generates a new OctopusFlashSetup object to be calculated upon
-    ///
-    /// Inputs: the full string contents of the input data set.
-    ///
-    /// Returns: A new OctopusFlashSetup object, with methods `calculate_day_a` and `calculate_day_b`
-    /// available
-    pub fn new(octopi_input_str: &str) -> OctopusFlashSetup {
-        day11_parser::parse(octopi_input_str).unwrap()
-    }
-
     fn get_points_iter() -> Box<dyn Iterator<Item = Point>> {
         Box::new((0..10).cartesian_product(0..10).map(|(y, x)| Point {
             x: x as isize,
@@ -54,12 +47,10 @@ impl OctopusFlashSetup {
 
     fn bump_energy_for_octopus_at_location(self: &mut OctopusFlashSetup, location: &Point) -> bool {
         if let Some(octopus) = self.get_octopus_at_point(location) {
-            octopus.energy += 1;
-            if octopus.energy == 10 {
-                return true;
-            }
+            octopus.bump_energy()
+        } else {
+            false
         }
-        false
     }
 
     fn increase_octopus_energy(self: &mut OctopusFlashSetup, location: &Point) {
@@ -81,8 +72,8 @@ impl OctopusFlashSetup {
         let octopi_flashing = self
             .octopi
             .iter_mut()
-            .filter(|octopus| octopus.energy >= 10)
-            .map(|octopus| octopus.energy = 0);
+            .map(|octopus| octopus.reset_energy())
+            .filter(|octopus| *octopus);
         octopi_flashing.count()
     }
 
