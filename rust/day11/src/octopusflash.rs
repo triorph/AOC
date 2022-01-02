@@ -13,35 +13,25 @@ pub fn from_octopi(octopi: [Octopus; 100]) -> OctopusFlashSetup {
 
 impl OctopusFlashSetup {
     fn get_points_iter() -> Box<dyn Iterator<Item = Point>> {
-        Box::new((0..10).cartesian_product(0..10).map(|(y, x)| Point {
-            x: x as isize,
-            y: y as isize,
-        }))
+        Box::new(
+            (0..10)
+                .cartesian_product(0..10)
+                .map(|(y, x)| Point::new(x, y)),
+        )
     }
 
     fn get_octopus_at_point(self: &mut OctopusFlashSetup, point: &Point) -> Option<&mut Octopus> {
-        if point.x < 0 || point.x >= 10 || point.y < 0 || point.y >= 10 {
+        if point.out_of_bounds() {
             None
         } else {
-            let index = (point.y * 10 + point.x) as usize;
+            let index = point.get_as_index();
             Some(&mut self.octopi[index])
         }
     }
 
     fn update_neighbours(self: &mut OctopusFlashSetup, location: &Point) {
-        for point in [
-            Point { x: -1, y: -1 },
-            Point { x: 0, y: -1 },
-            Point { x: 1, y: -1 },
-            Point { x: -1, y: 0 },
-            Point { x: 1, y: 0 },
-            Point { x: -1, y: 1 },
-            Point { x: 0, y: 1 },
-            Point { x: 1, y: 1 },
-        ]
-        .into_iter()
-        {
-            self.increase_octopus_energy(&(point + location.clone()));
+        for point in location.get_neighbours() {
+            self.increase_octopus_energy(&point);
         }
     }
 

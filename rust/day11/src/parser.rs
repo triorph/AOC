@@ -13,7 +13,7 @@ peg::parser! {  grammar day11_parser() for str {
             let octopi : [Octopus; 100] = energy_values.into_iter().enumerate().map(|( i, energy )| {
                 let x = (i % 10) as isize;
                 let y = (i / 10) as isize;
-                Octopus::new_at_location_with_energy(energy, Point{x, y})
+                Octopus::new_at_location_with_energy(energy, Point::new( x, y ))
             }).collect::<Vec<Octopus>>().try_into().unwrap();
             from_octopi( octopi )
         }
