@@ -10,5 +10,3 @@ Find the shortest path for the given stacks
 
 Part b:
 Insert some not very helpful amphipods in the middle of the stacks, and then find the shortest path again.
-
-
