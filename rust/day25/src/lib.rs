@@ -1,5 +1,4 @@
 extern crate peg;
-use itertools::Itertools;
 use std::collections::HashMap;
 
 #[derive(Hash, Eq, PartialEq, Clone)]
@@ -134,11 +133,5 @@ mod test {
     fn test_day_a() {
         let day25_setup = Day25Setup::new(include_str!("../test_data.txt"));
         assert_eq!(day25_setup.calculate_day_a(), 58);
-    }
-
-    #[test]
-    fn test_day_b() {
-        let day25_setup = Day25Setup::new(include_str!("../test_data.txt"));
-        assert_eq!(day25_setup.calculate_day_b(), 0);
     }
 }

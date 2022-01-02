@@ -9,7 +9,4 @@ fn main() {
     let day25_setup = Day25Setup::new(&input_str[..]);
     let day_a = day25_setup.calculate_day_a();
     println!("Day a result: {}", day_a);
-    let day25_setup = Day25Setup::new(&input_str[..]);
-    let day_b = day25_setup.calculate_day_b();
-    println!("Day b result: {}", day_b);
 }
