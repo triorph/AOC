@@ -48,10 +48,13 @@ pub fn calculate_day_b(input_str: &str) -> usize {
 
 #[cfg(test)]
 mod test {
-    use crate::calculate_day_a;
+    use crate::get_values;
+    use crate::run_int_code;
 
     #[test]
-    fn test_calculate_day_a() {
-        assert_eq!(calculate_day_a("1,9,10,3,2,3,11,0,99,30,40,50"), 3500);
+    fn test_run_intcode_simulation() {
+        let mut memory = get_values("1,9,10,3,2,3,11,0,99,30,40,50");
+        run_int_code(&mut memory);
+        assert_eq!(3500, memory[0]);
     }
 }
