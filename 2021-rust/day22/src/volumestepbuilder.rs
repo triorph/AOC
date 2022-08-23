@@ -9,8 +9,7 @@ impl VolumeStepBuilder {
     fn subtract_from_other(to_be_subtracted: &[Cuboid], to_subtract: &[Cuboid]) -> Vec<Cuboid> {
         to_be_subtracted
             .iter()
-            .map(|vol_to_be| vol_to_be.repeatedly_subtract_from(to_subtract))
-            .flatten()
+            .flat_map(|vol_to_be| vol_to_be.repeatedly_subtract_from(to_subtract))
             .collect::<Vec<Cuboid>>()
     }
 

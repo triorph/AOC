@@ -93,8 +93,7 @@ impl Cuboid {
             let split_x = self.split_x(other);
             split_x
                 .into_iter()
-                .map(|x| x.subtract_volume_for_y(other))
-                .flatten()
+                .flat_map(|x| x.subtract_volume_for_y(other))
                 .filter(|v| !v.is_empty())
                 .filter(|v| !v.is_subset_of(other))
                 .collect()
@@ -188,8 +187,7 @@ impl Cuboid {
         let split_y = self.split_y(other);
         split_y
             .into_iter()
-            .map(|y| y.subtract_volume_for_z(other))
-            .flatten()
+            .flat_map(|y| y.subtract_volume_for_z(other))
             .collect()
     }
 
@@ -209,8 +207,7 @@ impl Cuboid {
             ret = ret
                 .into_iter()
                 .filter(|volume| !volume.is_subset_of(vol_to_subtract))
-                .map(|volume| volume.subtract_volume_for_x(vol_to_subtract))
-                .flatten()
+                .flat_map(|volume| volume.subtract_volume_for_x(vol_to_subtract))
                 .collect::<Vec<Cuboid>>();
         }
         ret
