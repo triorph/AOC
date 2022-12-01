@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::prelude::*;
+use std::fs::read_to_string;
 
 pub trait AOCCalculator<Answer> {
     fn new(input_file: &str) -> Self;
@@ -9,9 +8,6 @@ pub trait AOCCalculator<Answer> {
 }
 
 pub fn read_input_file(filename: &str) -> String {
-    let mut buffer = String::new();
-    let mut f = File::open(filename)
-        .unwrap_or_else(|_| panic!("We required {:?} to exist for this to run", filename));
-    f.read_to_string(&mut buffer).unwrap();
-    buffer
+    read_to_string(filename)
+        .unwrap_or_else(|_| panic!("We required {:?} to exist for this to run", filename))
 }
