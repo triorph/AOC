@@ -1,5 +1,5 @@
-# 2021-AOC
+# Advent of code
 
-Advent of code solutions for 2021.
+Advent of code solutions
 
-Currently just done in rust, as an opportunity to learn the language. Also want to learn more typescript, so once I figure out how to actually run that (in node?) I might redo some of them there.
+Initially I made this repo for 2021, but in reality I think I prefer to keep the same repo for each year.
