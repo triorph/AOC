@@ -28,8 +28,8 @@ mod test {
     #[test]
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
-        let expected = day1_parser::parse(&input_str).expect("Should parse successfully");
-        let actual = vec![
+        let actual = day1_parser::parse(&input_str).expect("Should parse successfully");
+        let expected = vec![
             vec![1000, 2000, 3000],
             vec![4000],
             vec![5000, 6000],
