@@ -1,4 +1,5 @@
 extern crate peg;
+use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day1_parser() for str {
     rule number() -> usize
@@ -11,6 +12,14 @@ peg::parser! { pub grammar day1_parser() for str {
         }
 }}
 
+pub fn parse_data(input: &str) -> Result<Vec<Vec<usize>>, AOCFileOrParseError> {
+    if let Ok(ret) = day1_parser::parse(input) {
+        Ok(ret)
+    } else {
+        Err(AOCFileOrParseError)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -18,7 +27,7 @@ mod test {
     use aoc_helpers::read_input_file;
     #[test]
     fn test_parse() {
-        let input_str = read_input_file("data/test_data.txt");
+        let input_str = read_input_file("data/test_data.txt").unwrap();
         let expected = day1_parser::parse(&input_str).expect("Should parse successfully");
         let actual = vec![
             vec![1000, 2000, 3000],
