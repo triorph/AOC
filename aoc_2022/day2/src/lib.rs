@@ -18,7 +18,7 @@ impl AOCCalculator<usize> for Day2 {
     fn calculate_day_a(&self) -> usize {
         self.hand_pairs
             .iter()
-            .map(|(them, us)| us.calculate_score_vs(them))
+            .map(|(them, us)| us.calculate_score_vs_day_a(them))
             .sum()
     }
 
