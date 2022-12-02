@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 aoc_helpers = {path = "aoc_helpers"}
 day1 = {path = "day1"}
+day2 = {path = "day2"}
