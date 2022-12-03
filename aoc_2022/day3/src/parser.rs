@@ -2,17 +2,19 @@ extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day3_parser() for str {
-    rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    pub rule parse() -> Vec<usize>
-        = lines_of_numbers:number() ++ ("\n" +) "\n" * {
-             { lines_of_numbers }
+    rule letter() -> char
+        = n:$(['a'..='z' | 'A'..='Z']) { n.chars().next().expect("Must be exactly length 1") }
+    rule rucksacks() -> Vec<char>
+        = vals:letter() ++ "" {vals}
+    pub rule parse() -> Vec<Vec<char>>
+        = line_of_rucksacks:rucksacks() ++ ("\n" +) "\n" * {
+             { line_of_rucksacks }
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<(), AOCFileOrParseError> {
-    if let Ok(_ret) = day3_parser::parse(input) {
-        Ok(())
+pub fn parse_data(input: &str) -> Result<Vec<Vec<char>>, AOCFileOrParseError> {
+    if let Ok(ret) = day3_parser::parse(input) {
+        Ok(ret)
     } else {
         Err(AOCFileOrParseError)
     }
@@ -27,7 +29,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day3_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
-        assert_eq!(expected, actual)
+        assert_eq!(actual.len(), 6)
     }
 }
