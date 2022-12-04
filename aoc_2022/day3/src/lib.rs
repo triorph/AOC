@@ -38,8 +38,8 @@ impl Day3 {
             .iter()
             .map(|line| {
                 vec![
-                    HashSet::from_iter(line[0..(line.len() / 2)].iter().copied()),
-                    HashSet::from_iter(line[(line.len() / 2)..].iter().copied()),
+                    HashSet::from_vec(&line[0..(line.len() / 2)]),
+                    HashSet::from_vec(&line[(line.len() / 2)..]),
                 ]
             })
             .collect()
@@ -51,7 +51,7 @@ impl Day3 {
             let mut inner_ret = Vec::new();
             for j in 0..3 {
                 let line = &self.rucksack_lines[3 * i + j];
-                inner_ret.push(HashSet::from_iter(line.iter().copied()))
+                inner_ret.push(HashSet::from_vec(line))
             }
             ret.push(inner_ret);
         }

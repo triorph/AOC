@@ -12,6 +12,21 @@ where
     start
 }
 
+pub trait FromVec<T>
+where
+    T: Eq,
+    T: std::hash::Hash,
+    T: Copy,
+{
+    fn from_vec(v: &[T]) -> Self;
+}
+
+impl FromVec<char> for HashSet<char> {
+    fn from_vec(v: &[char]) -> HashSet<char> {
+        HashSet::from_iter(v.iter().copied())
+    }
+}
+
 pub trait HasPriority {
     fn get_priority(&self) -> usize;
 }
