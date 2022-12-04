@@ -2,8 +2,7 @@ use aoc_helpers::{AOCCalculator, AOCFileOrParseError};
 use day1::Day1;
 use day2::Day2;
 use day3::Day3;
-// use day3::Day3;
-// use day4::Day4;
+use day4::Day4;
 // use day5::Day5;
 // use day6::Day6;
 // use day7::Day7;
@@ -51,7 +50,11 @@ fn main() -> Result<(), AOCFileOrParseError> {
         "day3",
         &allowed_days,
     );
-    // run_day_if_enabled(Box::new(Day4::new("day4/data/input_data.txt")?), "day4", allowed_days);
+    run_day_if_enabled(
+        Box::new(Day4::new("day4/data/input_data.txt")?),
+        "day4",
+        &allowed_days,
+    );
     // run_day_if_enabled(Box::new(Day5::new("day5/data/input_data.txt")?), "day5", allowed_days);
     // run_day_if_enabled(Box::new(Day6::new("day6/data/input_data.txt")?), "day6", allowed_days);
     // run_day_if_enabled(Box::new(Day7::new("day7/data/input_data.txt")?), "day7", allowed_days);
