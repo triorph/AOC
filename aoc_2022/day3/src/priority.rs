@@ -12,51 +12,53 @@ where
     start
 }
 
-pub trait FromVec<T>
+pub fn hashset_from_vec<T>(v: &[T]) -> HashSet<T>
 where
     T: Eq + Hash + Copy,
 {
-    fn from_vec(v: &[T]) -> Self;
-}
-
-impl FromVec<char> for HashSet<char> {
-    fn from_vec(v: &[char]) -> HashSet<char> {
-        HashSet::from_iter(v.iter().copied())
-    }
+    HashSet::from_iter(v.iter().copied())
 }
 
 pub trait HasPriority {
-    fn get_priority(&self) -> usize;
+    fn get_priority(&self) -> u32;
 }
 
 impl HasPriority for char {
-    fn get_priority(&self) -> usize {
-        let mut count = 0;
-        for maybe in 'a'..='z' {
-            count += 1;
-            if self == &maybe {
-                return count;
-            }
+    fn get_priority(&self) -> u32 {
+        if ('a'..='z').contains(self) {
+            return u32::from(*self) - u32::from('a') + 1;
         }
-        for maybe in 'A'..='Z' {
-            count += 1;
-            if self == &maybe {
-                return count;
-            }
+        if ('A'..='Z').contains(self) {
+            return u32::from(*self) - u32::from('A') + 27;
         }
         panic!("char {:?} wasn't found in a..z or A..Z", self);
     }
 }
 
 impl HasPriority for Vec<Vec<HashSet<char>>> {
-    fn get_priority(&self) -> usize {
+    fn get_priority(&self) -> u32 {
         self.iter()
             .map(|group| {
                 multi_hashset_intersection(group.clone())
                     .iter()
                     .map(|c| c.get_priority())
-                    .sum::<usize>()
+                    .sum::<u32>()
             })
             .sum()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::HasPriority;
+
+    #[test]
+    fn test_char_get_priority() {
+        assert_eq!('p'.get_priority(), 16);
+        assert_eq!('L'.get_priority(), 38);
+        assert_eq!('P'.get_priority(), 42);
+        assert_eq!('v'.get_priority(), 22);
+        assert_eq!('t'.get_priority(), 20);
+        assert_eq!('s'.get_priority(), 19);
     }
 }
