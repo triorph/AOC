@@ -42,7 +42,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let skeleton = Skeleton::new("data/test_data.txt").unwrap();
-        let expected = 45000;
+        let expected = 0;
         let actual = skeleton.calculate_day_b();
         assert_eq!(expected, actual);
     }

@@ -25,7 +25,7 @@ use day4::Day4;
 // use day24::Day24;
 // use day25::Day25
 
-const ALL_CURRENT_DAYS: [&str; 3] = ["day1", "day2", "day3"];
+const ALL_CURRENT_DAYS: [&str; 4] = ["day1", "day2", "day3", "day4"];
 
 fn run_day_if_enabled(day: Box<dyn AOCCalculator<usize>>, name: &str, allowed_days: &[&str]) {
     if allowed_days.contains(&name) {
