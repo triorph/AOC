@@ -6,7 +6,7 @@ peg::parser! { pub grammar day4_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
     rule range() -> Range
-        = l:number() "-" r:number() { (l,r) }
+        = start:number() "-" end:number() { Range{start, end} }
     rule assignment_pair() -> Assignment
         = l:range() "," r:range() { (l, r) }
     pub rule parse() -> Vec<Assignment>
@@ -32,7 +32,10 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day4_parser::parse(&input_str).expect("Should parse successfully");
-        assert_eq!(((2, 4), (6, 8)), actual[0]);
+        assert_eq!(
+            (Range { start: 2, end: 4 }, Range { start: 6, end: 8 }),
+            actual[0]
+        );
         assert_eq!(actual.len(), 6);
     }
 }

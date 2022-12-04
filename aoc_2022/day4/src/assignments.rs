@@ -1,4 +1,8 @@
-pub type Range = (usize, usize);
+#[derive(Debug, PartialEq, Eq)]
+pub struct Range {
+    pub start: usize,
+    pub end: usize,
+}
 pub type Assignment = (Range, Range);
 
 trait Contains {
@@ -12,12 +16,12 @@ pub trait Overlaps {
 }
 
 impl Contains for Range {
-    fn contains(&self, &other: &Range) -> bool {
-        self.0 >= other.0 && self.1 <= other.1
+    fn contains(&self, other: &Range) -> bool {
+        self.start >= other.start && self.end <= other.end
     }
 
-    fn overlaps(&self, &other: &Range) -> bool {
-        (self.0..=self.1).contains(&other.0) || (self.0..=self.1).contains(&other.1)
+    fn overlaps(&self, other: &Range) -> bool {
+        self.end >= other.start && self.start <= other.end
     }
 }
 
@@ -27,6 +31,6 @@ impl Overlaps for Assignment {
     }
 
     fn partial_overlap(&self) -> bool {
-        self.0.overlaps(&self.1) || self.1.overlaps(&self.0)
+        self.0.overlaps(&self.1)
     }
 }
