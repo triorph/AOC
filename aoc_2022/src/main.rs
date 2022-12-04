@@ -3,7 +3,7 @@ use day1::Day1;
 use day2::Day2;
 use day3::Day3;
 use day4::Day4;
-// use day5::Day5;
+use day5::Day5;
 // use day6::Day6;
 // use day7::Day7;
 // use day8::Day8;
@@ -25,9 +25,9 @@ use day4::Day4;
 // use day24::Day24;
 // use day25::Day25
 
-const ALL_CURRENT_DAYS: [&str; 4] = ["day1", "day2", "day3", "day4"];
+const ALL_CURRENT_DAYS: [&str; 5] = ["day1", "day2", "day3", "day4", "day5"];
 
-fn run_day_if_enabled(day: Box<dyn AOCCalculator<usize>>, name: &str, allowed_days: &[&str]) {
+fn run_day_if_enabled<T>(day: Box<dyn AOCCalculator<T>>, name: &str, allowed_days: &[&str]) {
     if allowed_days.contains(&name) {
         day.print_results(name)
     }
@@ -55,7 +55,11 @@ fn main() -> Result<(), AOCFileOrParseError> {
         "day4",
         &allowed_days,
     );
-    // run_day_if_enabled(Box::new(Day5::new("day5/data/input_data.txt")?), "day5", allowed_days);
+    run_day_if_enabled(
+        Box::new(Day5::new("day5/data/input_data.txt")?),
+        "day5",
+        &allowed_days,
+    );
     // run_day_if_enabled(Box::new(Day6::new("day6/data/input_data.txt")?), "day6", allowed_days);
     // run_day_if_enabled(Box::new(Day7::new("day7/data/input_data.txt")?), "day7", allowed_days);
     // run_day_if_enabled(Box::new(Day8::new("day8/data/input_data.txt")?), "day8", allowed_days);
