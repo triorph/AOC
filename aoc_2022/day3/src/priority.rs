@@ -1,9 +1,9 @@
 use std::collections::HashSet;
+use std::hash::Hash;
+
 fn multi_hashset_intersection<T>(input: Vec<HashSet<T>>) -> HashSet<T>
 where
-    T: Eq,
-    T: std::hash::Hash,
-    T: Copy,
+    T: Eq + Hash + Copy,
 {
     let mut start = input[0].clone();
     for other in input[1..].iter() {
@@ -14,9 +14,7 @@ where
 
 pub trait FromVec<T>
 where
-    T: Eq,
-    T: std::hash::Hash,
-    T: Copy,
+    T: Eq + Hash + Copy,
 {
     fn from_vec(v: &[T]) -> Self;
 }
