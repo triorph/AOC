@@ -60,6 +60,7 @@ pub fn parse_data(input: &str) -> Result<(StackSet, MoveList), AOCFileOrParseErr
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     use aoc_helpers::read_input_file;
     #[test]

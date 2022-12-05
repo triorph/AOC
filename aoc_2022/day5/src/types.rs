@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 pub type Move = (usize, usize, usize);
 pub type MoveList = Vec<Move>;
 pub type Stack = Vec<char>;

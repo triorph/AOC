@@ -51,6 +51,7 @@ impl HasPriority for Vec<Vec<HashSet<char>>> {
 #[cfg(test)]
 mod test {
     use super::HasPriority;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_char_get_priority() {

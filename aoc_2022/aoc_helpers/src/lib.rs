@@ -3,6 +3,14 @@ use std::fs::read_to_string;
 #[derive(Debug)]
 pub struct AOCFileOrParseError;
 
+impl std::error::Error for AOCFileOrParseError {}
+
+impl std::fmt::Display for AOCFileOrParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
 pub trait AOCCalculator<Answer> {
     fn new(input_file: &str) -> Result<Self, AOCFileOrParseError>
     where
