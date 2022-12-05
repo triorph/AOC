@@ -23,9 +23,16 @@ impl AOCCalculator<usize> for Day1 {
     }
 
     fn calculate_day_b(&self) -> usize {
-        let mut calories = self.calories.clone();
-        calories.sort();
-        calories[(calories.len() - 3)..calories.len()].iter().sum()
+        self.calories
+            .iter()
+            .fold([0, 0, 0], |current, candidate| match current {
+                [m1, m2, _] if candidate >= &m1 => [*candidate, m1, m2],
+                [m1, m2, _] if candidate >= &m2 => [m1, *candidate, m2],
+                [m1, m2, m3] if candidate >= &m3 => [m1, m2, *candidate],
+                current => current,
+            })
+            .iter()
+            .sum()
     }
 
     fn print_results(&self, name: &str) {
