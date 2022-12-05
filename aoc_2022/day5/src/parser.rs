@@ -66,7 +66,21 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day5_parser::parse(&input_str).expect("Should parse successfully");
-        // let expected: Vec<usize> = vec![];
-        // assert_eq!(expected, actual)
+        assert_eq!(actual.0.len(), 3);
+        assert_eq!(actual.0.get(&1).expect("1 is in dict"), &vec!['Z', 'N']);
+        assert_eq!(
+            actual.0.get(&2).expect("2 is in dict"),
+            &vec!['M', 'C', 'D']
+        );
+        assert_eq!(actual.0.get(&3).expect("3 is in dict"), &vec!['P']);
+        assert_eq!(actual.1.len(), 4);
+        // move 1 from 2 to 1
+        assert_eq!(actual.1[0], (1, 2, 1));
+        // move 3 from 1 to 3
+        assert_eq!(actual.1[1], (3, 1, 3));
+        // move 2 from 2 to 1
+        assert_eq!(actual.1[2], (2, 2, 1));
+        // move 1 from 1 to 2
+        assert_eq!(actual.1[3], (1, 1, 2));
     }
 }
