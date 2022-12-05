@@ -12,7 +12,7 @@ peg::parser! { pub grammar day2_parser() for str {
     rule hand() -> Hand
         = hand:(Rock() / Scissors() / Paper()) { hand }
     rule hand_pair() -> (Hand, Hand)
-        = h1:hand() " " h2:hand() { (h1, h2) }
+        = h1:hand() (" ") h2:hand() { (h1, h2) }
     pub rule parse() -> Vec<(Hand, Hand)>
         = hand_pair:hand_pair() ++ ("\n" +) "\n" * {
              { hand_pair }

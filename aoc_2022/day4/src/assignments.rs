@@ -21,6 +21,8 @@ impl Contains for Range {
     }
 
     fn overlaps(&self, other: &Range) -> bool {
+        // A little tricky to get your head around, but is roughly equivalent to "we aren't
+        // completely separate" in binary logic
         self.end >= other.start && self.start <= other.end
     }
 }

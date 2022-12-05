@@ -17,9 +17,7 @@ impl AOCCalculator<usize> for Day1 {
     }
 
     fn calculate_day_a(&self) -> usize {
-        self.calories
-            .iter()
-            .fold(0, |a, b| if a > *b { a } else { *b })
+        *self.calories.iter().max().unwrap_or(&0)
     }
 
     fn calculate_day_b(&self) -> usize {

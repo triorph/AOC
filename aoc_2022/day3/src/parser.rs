@@ -23,9 +23,9 @@ pub fn parse_data(input: &str) -> Result<Vec<Vec<char>>, AOCFileOrParseError> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use aoc_helpers::read_input_file;
     use pretty_assertions::assert_eq;
 
-    use aoc_helpers::read_input_file;
     #[test]
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();

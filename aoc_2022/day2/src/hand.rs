@@ -5,10 +5,10 @@ pub enum Hand {
     Scissors,
 }
 
-pub enum Result {
-    Win,
-    Draw,
+pub enum Outcome {
     Loss,
+    Draw,
+    Win,
 }
 
 impl Hand {
@@ -33,13 +33,13 @@ impl Hand {
         )
     }
 
-    fn get_result_vs(&self, other: &Hand) -> Result {
+    fn get_result_vs(&self, other: &Hand) -> Outcome {
         if self.is_winner(other) {
-            Result::Win
+            Outcome::Win
         } else if self.is_draw(other) {
-            Result::Draw
+            Outcome::Draw
         } else {
-            Result::Loss
+            Outcome::Loss
         }
     }
 
@@ -47,41 +47,41 @@ impl Hand {
         self.get_result_vs(other).get_score() + self.get_score()
     }
 
-    fn to_result(self) -> Result {
+    fn to_outcome(self) -> Outcome {
         match self {
             // X was rock in day a, but loss in day b
-            Hand::Rock => Result::Loss,
+            Hand::Rock => Outcome::Loss,
             // Y was paper in day a, but draw in day b
-            Hand::Paper => Result::Draw,
+            Hand::Paper => Outcome::Draw,
             // Z was scissros in day a, but win in day b
-            Hand::Scissors => Result::Win,
+            Hand::Scissors => Outcome::Win,
         }
     }
 
     pub fn calculate_score_vs_day_b(&self, other: &Hand) -> usize {
-        let game_result = self.to_result();
-        game_result.get_opponent(other).get_score() + game_result.get_score()
+        let desired_outcome = self.to_outcome();
+        other.calculate_their_hand(&desired_outcome).get_score() + desired_outcome.get_score()
+    }
+
+    fn calculate_their_hand(&self, their_outcome: &Outcome) -> Hand {
+        match (their_outcome, self) {
+            (Outcome::Loss, Hand::Rock) => Hand::Scissors,
+            (Outcome::Loss, Hand::Paper) => Hand::Rock,
+            (Outcome::Loss, Hand::Scissors) => Hand::Paper,
+            (Outcome::Draw, val) => *val,
+            (Outcome::Win, Hand::Rock) => Hand::Paper,
+            (Outcome::Win, Hand::Paper) => Hand::Scissors,
+            (Outcome::Win, Hand::Scissors) => Hand::Rock,
+        }
     }
 }
 
-impl Result {
+impl Outcome {
     fn get_score(&self) -> usize {
         match self {
-            Result::Win => 6,
-            Result::Draw => 3,
-            Result::Loss => 0,
-        }
-    }
-
-    fn get_opponent(&self, us: &Hand) -> Hand {
-        match (self, us) {
-            (Result::Loss, Hand::Rock) => Hand::Scissors,
-            (Result::Loss, Hand::Paper) => Hand::Rock,
-            (Result::Loss, Hand::Scissors) => Hand::Paper,
-            (Result::Draw, val) => *val,
-            (Result::Win, Hand::Rock) => Hand::Paper,
-            (Result::Win, Hand::Paper) => Hand::Scissors,
-            (Result::Win, Hand::Scissors) => Hand::Rock,
+            Outcome::Win => 6,
+            Outcome::Draw => 3,
+            Outcome::Loss => 0,
         }
     }
 }
