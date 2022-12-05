@@ -1,32 +1,32 @@
 mod parser;
-mod types;
+mod stack_set;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use types::*;
+use stack_set::{Instruction, StackSet};
 
 pub struct Day5 {
     stack_set: StackSet,
-    move_list: MoveList,
+    instructions: Vec<Instruction>,
 }
 
 impl AOCCalculator<String> for Day5 {
     fn new(filename: &str) -> Result<Day5, AOCFileOrParseError> {
         let (stack_set, move_list) = parse_data(&read_input_file(filename)?)?;
         Ok(Day5 {
-            stack_set,
-            move_list,
+            stack_set: StackSet::new(stack_set),
+            instructions: move_list,
         })
     }
 
     fn calculate_day_a(&self) -> String {
         let mut stack_set = self.stack_set.clone();
-        stack_set.process_moves_a(&self.move_list);
+        stack_set.process_moves_a(&self.instructions);
         stack_set.show_top_values()
     }
 
     fn calculate_day_b(&self) -> String {
         let mut stack_set = self.stack_set.clone();
-        stack_set.process_moves_b(&self.move_list);
+        stack_set.process_moves_b(&self.instructions);
         stack_set.show_top_values()
     }
 

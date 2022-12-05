@@ -1,5 +1,5 @@
 extern crate peg;
-use crate::types::*;
+use crate::stack_set::{Instruction, Stack};
 use aoc_helpers::AOCFileOrParseError;
 use std::collections::HashMap;
 
@@ -20,13 +20,13 @@ peg::parser! { pub grammar day5_parser() for str {
         = lines_of_horizontals:horizontal_values() ++ "\n" ("\n") names:names() "\n" {
             convert_horizontal_to_vertical(names, lines_of_horizontals)
         }
-    rule move() -> Move
+    rule move() -> Instruction
         = "move " quantity:number() " from " source:number() " to " destination:number() {
             (quantity, source, destination)
         }
-    rule moves() -> MoveList
+    rule moves() -> Vec<Instruction>
         = moves:move() ++ "\n" { moves }
-    pub rule parse() -> (StackSet, MoveList)
+    pub rule parse() -> (HashMap<usize, Stack>, Vec<Instruction>)
         = stack_set:build_vertical_values() "\n" move_list:moves() "\n"* {
             (stack_set, move_list)
         }
@@ -49,7 +49,10 @@ fn convert_horizontal_to_vertical(
     }
     ret
 }
-pub fn parse_data(input: &str) -> Result<(StackSet, MoveList), AOCFileOrParseError> {
+
+pub fn parse_data(
+    input: &str,
+) -> Result<(HashMap<usize, Stack>, Vec<Instruction>), AOCFileOrParseError> {
     if let Ok(ret) = day5_parser::parse(input) {
         Ok(ret)
     } else {
