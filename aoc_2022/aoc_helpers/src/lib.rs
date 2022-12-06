@@ -1,7 +1,16 @@
+use std::collections::HashSet;
 use std::fs::read_to_string;
+use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct AOCFileOrParseError;
+
+pub fn hashset_from_vec<T>(v: &[T]) -> HashSet<T>
+where
+    T: Eq + Hash + Copy,
+{
+    HashSet::from_iter(v.iter().copied())
+}
 
 impl std::error::Error for AOCFileOrParseError {}
 

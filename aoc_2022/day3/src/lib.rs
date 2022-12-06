@@ -2,8 +2,8 @@ mod parser;
 mod priority;
 
 use crate::parser::parse_data;
-use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use priority::{hashset_from_vec, HasPriority};
+use aoc_helpers::{hashset_from_vec, read_input_file, AOCCalculator, AOCFileOrParseError};
+use priority::HasPriority;
 
 use std::collections::HashSet;
 

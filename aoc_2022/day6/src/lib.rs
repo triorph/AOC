@@ -1,6 +1,6 @@
 mod parser;
 use crate::parser::parse_data;
-use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use aoc_helpers::{hashset_from_vec, read_input_file, AOCCalculator, AOCFileOrParseError};
 
 pub struct Day6 {
     data: String,
@@ -14,11 +14,11 @@ impl AOCCalculator<usize> for Day6 {
     }
 
     fn calculate_day_a(&self) -> usize {
-        find_time_until_n_different(&self.data, 4)
+        find_when_n_different(&self.data, 4).expect("Has an answer")
     }
 
     fn calculate_day_b(&self) -> usize {
-        find_time_until_n_different(&self.data, 14)
+        find_when_n_different(&self.data, 14).expect("Has an answer")
     }
 
     fn print_results(&self, name: &str) {
@@ -27,29 +27,18 @@ impl AOCCalculator<usize> for Day6 {
     }
 }
 
-fn find_time_until_n_different(data: &str, n: usize) -> usize {
-    let mut count = n;
-    let mut chars = data.chars();
-    while chars.clone().count() >= n {
-        let testable = chars.clone().take(n).collect::<Vec<char>>();
-        // println!("testable: {:?}", testable);
-        if test_all_different(&testable, n) {
-            return count;
-        } else {
-            count += 1;
-            chars.next();
+fn find_when_n_different(data: &str, n: usize) -> Result<usize, ()> {
+    let chars = data.chars().collect::<Vec<char>>();
+    for i in 0..(chars.len() - n) {
+        if test_all_different(&chars[i..i + n]) {
+            return Ok(i + n);
         }
     }
-    panic!("Shouldn't get here");
+    Err(())
 }
 
-fn test_all_different(vals: &[char], n: usize) -> bool {
-    for val in vals.iter() {
-        if vals.iter().filter(|v| v == &val).count() != 1 {
-            return false;
-        }
-    }
-    true
+fn test_all_different(vals: &[char]) -> bool {
+    hashset_from_vec(vals).len() == vals.len()
 }
 
 #[cfg(test)]
@@ -66,10 +55,50 @@ mod tests {
     }
 
     #[test]
+    fn further_day_a_examples() {
+        for (data, expected) in [
+            ("bvwbjplbgvbhsrlpgdmjqwftvncz", 5),
+            ("nppdvjthqldpwncqszvftbrmjlhg", 6),
+            ("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 10),
+            ("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 11),
+        ]
+        .into_iter()
+        {
+            assert_eq!(
+                Day6 {
+                    data: data.to_string()
+                }
+                .calculate_day_a(),
+                expected
+            );
+        }
+    }
+
+    #[test]
     fn test_calculate_day_b() {
         let day6 = Day6::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 19;
         let actual = day6.calculate_day_b();
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn further_day_b_examples() {
+        for (data, expected) in [
+            ("bvwbjplbgvbhsrlpgdmjqwftvncz", 23),
+            ("nppdvjthqldpwncqszvftbrmjlhg", 23),
+            ("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 29),
+            ("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 26),
+        ]
+        .into_iter()
+        {
+            assert_eq!(
+                Day6 {
+                    data: data.to_string()
+                }
+                .calculate_day_b(),
+                expected
+            );
+        }
     }
 }

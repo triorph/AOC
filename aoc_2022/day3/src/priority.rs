@@ -12,13 +12,6 @@ where
     start
 }
 
-pub fn hashset_from_vec<T>(v: &[T]) -> HashSet<T>
-where
-    T: Eq + Hash + Copy,
-{
-    HashSet::from_iter(v.iter().copied())
-}
-
 pub trait HasPriority {
     fn get_priority(&self) -> u32;
 }
