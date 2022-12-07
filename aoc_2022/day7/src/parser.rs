@@ -1,27 +1,24 @@
 extern crate peg;
-use crate::types::{SizeOrDir, TerminalLine};
+use crate::types::TerminalLine;
 use aoc_helpers::AOCFileOrParseError;
-use std::collections::HashMap;
 
 peg::parser! { pub grammar day7_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse::<usize>().unwrap() }
-    rule up_one_level() -> Option<String>
-        = ".." { None }
-    rule directory_or_file() -> Option<String>
-        = s:$(['a'..='z'|'.'|'/']+) { Some(s.to_string()) }
+    rule up_one_level() -> TerminalLine
+        = ".." { TerminalLine::DecreaseDir }
+    rule directory_or_file() -> TerminalLine
+        = s:$(['a'..='z'|'.'|'/']+) { TerminalLine::IncreaseDir }
     rule change_dir() -> TerminalLine
         = "$ cd " directory:(up_one_level() / directory_or_file()) {
-            TerminalLine::ChangeDir(directory)
+            directory
         }
     rule call_ls() -> TerminalLine
         = "$ ls" { TerminalLine::NoOp }
     rule list_file() -> TerminalLine
-        = n:number() ( " " ) f:directory_or_file() {
-            TerminalLine::File(n, f.unwrap())
-        }
+        = n:number() ( " " ) f:directory_or_file() { TerminalLine::File(n) }
     rule list_directory() -> TerminalLine
-        = "dir " directory:directory_or_file() { TerminalLine::Directory(directory.unwrap()) }
+        = "dir " directory:directory_or_file() { TerminalLine::NoOp }
     rule list() -> TerminalLine
         = file_or_directory:(list_file() / list_directory()) {
             file_or_directory
@@ -34,43 +31,48 @@ peg::parser! { pub grammar day7_parser() for str {
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<HashMap<String, Vec<SizeOrDir>>, AOCFileOrParseError> {
-    if let Ok(ret) = day7_parser::parse(input) {
-        Ok(build_directories(&ret))
+pub fn parse_data(input: &str) -> Result<Vec<usize>, AOCFileOrParseError> {
+    if let Ok(terminal_lines) = day7_parser::parse(input) {
+        Ok(build_sizes(&terminal_lines))
     } else {
         Err(AOCFileOrParseError)
     }
 }
 
-pub fn build_directories(lines: &[TerminalLine]) -> HashMap<String, Vec<SizeOrDir>> {
-    let mut directory_stack: Vec<String> = Vec::new();
-    let mut dir_contents: HashMap<String, Vec<SizeOrDir>> = HashMap::new();
+fn build_sizes(lines: &[TerminalLine]) -> Vec<usize> {
+    let mut sizes_stack: Vec<usize> = vec![];
+    let mut ret: Vec<usize> = Vec::new();
     for line in lines.iter() {
         match line {
             TerminalLine::NoOp => (),
-            TerminalLine::ChangeDir(Some(dir)) => {
-                directory_stack.push(dir.clone());
+            TerminalLine::IncreaseDir => sizes_stack.push(0),
+            TerminalLine::DecreaseDir => {
+                if let Some(current_size) = pop_and_merge_with_new_end(&mut sizes_stack) {
+                    ret.push(current_size);
+                }
             }
-            TerminalLine::ChangeDir(None) => {
-                directory_stack.pop();
-            }
-            TerminalLine::Directory(dir) => {
-                let current_dir = directory_stack.join(".");
-                dir_contents
-                    .entry(current_dir.clone())
-                    .and_modify(|contents| contents.push(SizeOrDir::Directory(dir.clone())))
-                    .or_insert_with(|| vec![SizeOrDir::Directory(dir.clone())]);
-            }
-            TerminalLine::File(size, _) => {
-                let current_dir = directory_stack.join(".");
-                dir_contents
-                    .entry(current_dir.clone())
-                    .and_modify(|contents| contents.push(SizeOrDir::Size(*size)))
-                    .or_insert_with(|| vec![SizeOrDir::Size(*size)]);
+            TerminalLine::File(size) => {
+                let len = sizes_stack.len();
+                sizes_stack[len - 1] += size;
             }
         }
     }
-    dir_contents
+    while let Some(size) = pop_and_merge_with_new_end(&mut sizes_stack) {
+        ret.push(size)
+    }
+    ret
+}
+
+fn pop_and_merge_with_new_end(sizes_stack: &mut Vec<usize>) -> Option<usize> {
+    if let Some(current_size) = sizes_stack.pop() {
+        let len = sizes_stack.len();
+        if len > 0 {
+            sizes_stack[len - 1] += current_size;
+        }
+        Some(current_size)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -83,6 +85,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day7_parser::parse(&input_str).expect("Should parse successfully");
-        assert_eq!(actual[0], TerminalLine::ChangeDir(Some("/".to_string())));
+        assert_eq!(actual[0], TerminalLine::IncreaseDir);
     }
 }
