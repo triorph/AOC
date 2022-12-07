@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 
 pub type Instruction = (usize, usize, usize);
@@ -25,50 +26,40 @@ impl StackSet {
     }
 
     fn process_move_a(&mut self, instruction: &Instruction) {
-        let (quantity, source, destination) = instruction;
+        let (quantity, source, dest) = instruction;
         for _ in 0..*quantity {
-            let val = self.pop_from(source);
-            if let Some(val) = val {
-                self.push_to(destination, val);
-            }
+            self.move_n_from_source_to_dest(1, source, dest)
         }
     }
 
     fn process_move_b(&mut self, instruction: &Instruction) {
-        let (quantity, source, destination) = instruction;
-        let mut input_stack = Vec::new();
-        for _ in 0..*quantity {
-            if let Some(val) = self.pop_from(source) {
-                input_stack.push(val);
-            }
-        }
-        for val in input_stack.iter().rev() {
-            self.push_to(destination, *val);
-        }
+        let (quantity, source, dest) = instruction;
+        self.move_n_from_source_to_dest(*quantity, source, dest)
     }
 
-    fn pop_from(&mut self, source: &usize) -> Option<char> {
-        self.stack_set.get_mut(source).unwrap().pop()
+    fn move_n_from_source_to_dest(&mut self, quantity: usize, source: &usize, dest: &usize) {
+        let input_stack = self.pop_n_from(source, quantity);
+        self.push_to(dest, &input_stack);
     }
 
-    fn push_to(&mut self, dest: &usize, value: char) {
-        self.stack_set.get_mut(dest).unwrap().push(value);
+    fn pop_n_from(&mut self, source: &usize, quantity: usize) -> Vec<char> {
+        let source_vec = self.stack_set.get_mut(source).unwrap();
+        source_vec.split_off(source_vec.len() - quantity)
+    }
+
+    fn push_to(&mut self, dest: &usize, input_stack: &[char]) {
+        self.stack_set.get_mut(dest).unwrap().extend(input_stack);
+    }
+
+    fn get_last_value_from(&self, source: &usize) -> Option<&char> {
+        self.stack_set.get(source).unwrap().last()
     }
 
     pub fn show_top_values(&self) -> String {
-        let mut ret = String::new();
-        let mut names: Vec<usize> = self.stack_set.keys().copied().collect();
-        names.sort();
-        for name in names.iter() {
-            ret.push(
-                *self
-                    .stack_set
-                    .get(name)
-                    .expect("keys are in dict")
-                    .last()
-                    .expect("has values"),
-            )
-        }
-        ret
+        self.stack_set
+            .keys()
+            .sorted()
+            .map(|name| self.get_last_value_from(name).expect("has values"))
+            .collect::<String>()
     }
 }
