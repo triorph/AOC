@@ -2,17 +2,19 @@ extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day8_parser() for str {
-    rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    pub rule parse() -> Vec<usize>
-        = lines_of_numbers:number() ++ ("\n" +) "\n" * {
+    rule number() -> u8
+        = n:$(['0'..='9']) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
+    rule number_line() -> Vec<u8>
+        = line_of_numbers:number() ++ "" { line_of_numbers }
+    pub rule parse() -> Vec<Vec<u8>>
+        = lines_of_numbers:number_line() ++ ("\n") "\n" * {
              { lines_of_numbers }
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<(), AOCFileOrParseError> {
-    if let Ok(_ret) = day8_parser::parse(input) {
-        Ok(())
+pub fn parse_data(input: &str) -> Result<Vec<Vec<u8>>, AOCFileOrParseError> {
+    if let Ok(ret) = day8_parser::parse(input) {
+        Ok(ret)
     } else {
         Err(AOCFileOrParseError)
     }
@@ -28,7 +30,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day8_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
-        assert_eq!(expected, actual)
+        assert_eq!(actual[0].len(), 5);
     }
 }
