@@ -1,12 +1,14 @@
+mod knot;
 mod parser;
-mod types;
+mod rope;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use knot::Knot;
+use rope::Rope;
 use std::collections::HashSet;
-use types::Point;
 
 pub struct Day9 {
-    data: Vec<Point>,
+    data: Vec<Knot>,
 }
 
 impl AOCCalculator<usize> for Day9 {
@@ -32,32 +34,12 @@ impl AOCCalculator<usize> for Day9 {
 
 impl Day9 {
     fn calculate_x_followers(&self, x: usize) -> usize {
-        let mut t_vals: HashSet<Point> = HashSet::new();
-        let mut knots = Day9::make_empty_knots(x + 1);
-        for dir in self.data.iter() {
-            for one_step in dir.get_steps().iter() {
-                knots = Day9::follow_the_leader(&knots, one_step);
-                t_vals.insert(knots[knots.len() - 1]);
-            }
+        let mut tail_locations: HashSet<Knot> = HashSet::new();
+        let mut rope = Rope::new(x + 1);
+        for instruction in self.data.iter() {
+            tail_locations.extend(rope.follow_instruction(instruction).iter())
         }
-        t_vals.len()
-    }
-
-    fn make_empty_knots(capacity: usize) -> Vec<Point> {
-        let mut ret = Vec::with_capacity(capacity);
-        for _ in 0..capacity {
-            ret.push(Point(0, 0));
-        }
-        ret
-    }
-
-    fn follow_the_leader(knots: &[Point], one_step: &Point) -> Vec<Point> {
-        let mut ret = Day9::make_empty_knots(knots.len());
-        ret[0] = &knots[0] + one_step;
-        for i in 1..knots.len() {
-            ret[i] = knots[i].follow_other(&ret[i - 1], 1)
-        }
-        ret
+        tail_locations.len()
     }
 }
 

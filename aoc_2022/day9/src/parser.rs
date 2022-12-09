@@ -1,27 +1,27 @@
 extern crate peg;
-use crate::types::Point;
+use crate::knot::Knot;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day9_parser() for str {
     rule number() -> isize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    rule up() -> Point
-        = "U " n:number() { Point(0, -n) }
-    rule down() -> Point
-        = "D " n:number() { Point(0, n) }
-    rule left() -> Point
-        = "L " n:number() { Point(-n, 0) }
-    rule right() -> Point
-        = "R " n:number() { Point(n, 0) }
-    rule direction() -> Point
+    rule up() -> Knot
+        = "U " n:number() { Knot(0, -n) }
+    rule down() -> Knot
+        = "D " n:number() { Knot(0, n) }
+    rule left() -> Knot
+        = "L " n:number() { Knot(-n, 0) }
+    rule right() -> Knot
+        = "R " n:number() { Knot(n, 0) }
+    rule direction() -> Knot
         = p:(up() / down() / left() / right()) { p }
-    pub rule parse() -> Vec<Point>
+    pub rule parse() -> Vec<Knot>
         = lines_of_directions:direction() ++ ("\n")  "\n" * {
              { lines_of_directions }
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<Vec<Point>, AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<Vec<Knot>, AOCFileOrParseError> {
     if let Ok(ret) = day9_parser::parse(input) {
         Ok(ret)
     } else {
