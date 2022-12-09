@@ -1,4 +1,4 @@
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Point(pub isize, pub isize);
 
 impl Point {
@@ -20,7 +20,7 @@ impl Point {
             let direction = self.1 / quantity;
             (quantity, Point(0, direction))
         };
-        (0..quantity).map(|_| direction.clone()).collect()
+        (0..quantity).map(|_| direction).collect()
     }
 
     fn calculate_distance(&self, other: &Point) -> usize {
