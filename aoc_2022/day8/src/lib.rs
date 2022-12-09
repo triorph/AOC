@@ -70,8 +70,8 @@ impl Day8 {
 
     fn is_point_viewable_from_edge(&self, point: &Point) -> bool {
         self.get_all_slices(point)
-            .iter_mut()
-            .any(|slice| self.is_slice_viewable_from_edge(point, Box::new(slice.as_mut())))
+            .into_iter()
+            .any(|slice: TreeIterator<'_>| self.is_slice_viewable_from_edge(point, slice))
     }
 
     fn trees_viewable_on_path(&self, point: &Point, slice: TreeIterator) -> usize {
