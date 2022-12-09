@@ -3,7 +3,7 @@ mod types;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use itertools::Itertools;
-use types::Point;
+use types::{Point, TreeIterator};
 
 pub struct Day8 {
     trees: Vec<Vec<u8>>,
@@ -37,33 +37,25 @@ impl AOCCalculator<usize> for Day8 {
 }
 
 impl Day8 {
-    fn get_slice_left<'a>(&'a self, point: &'a Point) -> Vec<u8> {
-        (0..point.0)
-            .map(|x| self.get_at_point(&(x, point.1)))
-            .rev()
-            .collect()
+    fn get_slice_left<'a>(&'a self, point: &'a Point) -> TreeIterator {
+        Box::new((0..point.0).map(|x| self.get_at_point(&(x, point.1))).rev())
     }
 
-    fn get_slice_right<'a>(&'a self, point: &'a Point) -> Vec<u8> {
-        ((point.0 + 1)..self.trees[point.1].len())
-            .map(|x| self.get_at_point(&(x, point.1)))
-            .collect()
+    fn get_slice_right<'a>(&'a self, point: &'a Point) -> TreeIterator {
+        Box::new(
+            ((point.0 + 1)..self.trees[point.1].len()).map(|x| self.get_at_point(&(x, point.1))),
+        )
     }
 
-    fn get_slice_above<'a>(&'a self, point: &'a Point) -> Vec<u8> {
-        (0..point.1)
-            .map(|y| self.get_at_point(&(point.0, y)))
-            .rev()
-            .collect()
+    fn get_slice_above<'a>(&'a self, point: &'a Point) -> TreeIterator {
+        Box::new((0..point.1).map(|y| self.get_at_point(&(point.0, y))).rev())
     }
 
-    fn get_slice_below<'a>(&'a self, point: &'a Point) -> Vec<u8> {
-        ((point.1 + 1)..self.trees.len())
-            .map(|y| self.get_at_point(&(point.0, y)))
-            .collect()
+    fn get_slice_below<'a>(&'a self, point: &'a Point) -> TreeIterator {
+        Box::new(((point.1 + 1)..self.trees.len()).map(|y| self.get_at_point(&(point.0, y))))
     }
 
-    fn get_all_slices<'a>(&'a self, point: &'a Point) -> [Vec<u8>; 4] {
+    fn get_all_slices<'a>(&'a self, point: &'a Point) -> [TreeIterator; 4] {
         [
             self.get_slice_left(point),
             self.get_slice_right(point),
@@ -72,39 +64,32 @@ impl Day8 {
         ]
     }
 
-    fn is_slice_viewable_from_edge(&self, point: &Point, slice: &[u8]) -> bool {
-        slice
-            .iter()
-            .filter(|&&tree| tree >= self.get_at_point(point))
-            .count()
-            == 0
+    fn is_slice_viewable_from_edge(&self, point: &Point, mut slice: TreeIterator) -> bool {
+        !slice.any(|tree| tree >= self.get_at_point(point))
     }
 
     fn is_point_viewable_from_edge(&self, point: &Point) -> bool {
         self.get_all_slices(point)
-            .iter()
-            .filter(|slice| self.is_slice_viewable_from_edge(point, *slice))
-            .count()
-            > 0
+            .iter_mut()
+            .any(|slice| self.is_slice_viewable_from_edge(point, Box::new(slice.as_mut())))
     }
 
-    fn trees_viewable_on_path(&self, point: &Point, slice: &[u8]) -> usize {
-        let this_tree = self.get_at_point(point);
+    fn trees_viewable_on_path(&self, point: &Point, slice: TreeIterator) -> usize {
         let mut count = 1;
-        for tree in slice.iter() {
-            if tree >= &this_tree {
+        for tree in slice {
+            if tree >= self.get_at_point(point) {
                 return count;
             } else {
                 count += 1;
             }
         }
-        count - 1
+        count - 1 // There's no tree at the end
     }
 
     fn get_beauty_score(&self, point: &Point) -> usize {
         self.get_all_slices(point)
-            .iter()
-            .map(|slice| self.trees_viewable_on_path(point, slice))
+            .into_iter()
+            .map(|slice: TreeIterator<'_>| self.trees_viewable_on_path(point, slice))
             .product::<usize>()
     }
 
