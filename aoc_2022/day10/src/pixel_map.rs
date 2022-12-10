@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct PixelMap {
     pixels: [bool; 40 * 6],
     cycle: usize,

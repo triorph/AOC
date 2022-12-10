@@ -40,7 +40,6 @@ impl AOCCalculator<isize> for Day10 {
         let mut pixel_map = PixelMap::new();
         for instruction in self.instructions.iter() {
             obj.process_instruction_day_b(instruction, &mut pixel_map);
-            println!("obj.x: {:?}", obj.x);
         }
         println!("Day b drawing is:\n{}", pixel_map);
         0
