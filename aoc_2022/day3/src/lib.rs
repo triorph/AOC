@@ -11,13 +11,20 @@ pub struct Day3 {
     rucksack_lines: Vec<Vec<char>>,
 }
 
-impl AOCCalculator<usize> for Day3 {
+impl AOCCalculator for Day3 {
     fn new(filename: &str) -> Result<Day3, AOCFileOrParseError> {
         Ok(Day3 {
             rucksack_lines: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day3 {
     fn calculate_day_a(&self) -> usize {
         self.get_rucksack_pairs_day_a()
             .get_priority()
@@ -32,13 +39,6 @@ impl AOCCalculator<usize> for Day3 {
             .expect("should convert to usize correctly")
     }
 
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
-    }
-}
-
-impl Day3 {
     fn get_rucksack_pairs_day_a(&self) -> Vec<Vec<HashSet<char>>> {
         self.rucksack_lines
             .iter()

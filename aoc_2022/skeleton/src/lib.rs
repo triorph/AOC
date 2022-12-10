@@ -6,24 +6,26 @@ pub struct Skeleton {
     data: (),
 }
 
-impl AOCCalculator<usize> for Skeleton {
+impl AOCCalculator for Skeleton {
     fn new(filename: &str) -> Result<Skeleton, AOCFileOrParseError> {
         Ok(Skeleton {
             data: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Skeleton {
     fn calculate_day_a(&self) -> usize {
         0
     }
 
     fn calculate_day_b(&self) -> usize {
         0
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
 

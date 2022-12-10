@@ -11,19 +11,11 @@ pub struct Day9 {
     data: Vec<Knot>,
 }
 
-impl AOCCalculator<usize> for Day9 {
+impl AOCCalculator for Day9 {
     fn new(filename: &str) -> Result<Day9, AOCFileOrParseError> {
         Ok(Day9 {
             data: parse_data(&read_input_file(filename)?)?,
         })
-    }
-
-    fn calculate_day_a(&self) -> usize {
-        self.calculate_x_followers(1)
-    }
-
-    fn calculate_day_b(&self) -> usize {
-        self.calculate_x_followers(9)
     }
 
     fn print_results(&self, name: &str) {
@@ -33,6 +25,14 @@ impl AOCCalculator<usize> for Day9 {
 }
 
 impl Day9 {
+    fn calculate_day_a(&self) -> usize {
+        self.calculate_x_followers(1)
+    }
+
+    fn calculate_day_b(&self) -> usize {
+        self.calculate_x_followers(9)
+    }
+
     fn calculate_x_followers(&self, x: usize) -> usize {
         let mut tail_locations: HashSet<Knot> = HashSet::new();
         let mut rope = Rope::new(x + 1);

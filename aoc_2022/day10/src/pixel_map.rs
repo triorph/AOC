@@ -1,7 +1,7 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PixelMap {
     pixels: [bool; 40 * 6],
-    cycle: usize,
+    pub cycle: usize,
 }
 
 impl PixelMap {
@@ -12,9 +12,9 @@ impl PixelMap {
         }
     }
 
-    pub fn draw_current(&mut self, x: isize) {
+    pub fn draw_next_pixel(&mut self, sprite: isize) {
         let x_pos = self.cycle % 40;
-        if ((x - 1)..=(x + 1)).contains(&(x_pos as isize)) {
+        if ((sprite - 1)..=(sprite + 1)).contains(&(x_pos as isize)) {
             self.pixels[self.cycle] = true;
         }
 
@@ -32,22 +32,5 @@ impl std::fmt::Display for PixelMap {
             ret += "\n";
         }
         write!(f, "{}", ret)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_pixel_result() {
-        let mut expected: String = "".into();
-        expected += "##..##..##..##..##..##..##..##..##..##..";
-        expected += "###...###...###...###...###...###...###.";
-        expected += "####....####....####....####....####....";
-        expected += "#####.....#####.....#####.....#####.....";
-        expected += "######......######......######......####";
-        expected += "#######.......#######.......#######.....";
     }
 }

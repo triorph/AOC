@@ -20,12 +20,10 @@ impl std::fmt::Display for AOCFileOrParseError {
     }
 }
 
-pub trait AOCCalculator<Answer> {
+pub trait AOCCalculator {
     fn new(input_file: &str) -> Result<Self, AOCFileOrParseError>
     where
         Self: std::marker::Sized;
-    fn calculate_day_a(&self) -> Answer;
-    fn calculate_day_b(&self) -> Answer;
     fn print_results(&self, name: &str);
 }
 

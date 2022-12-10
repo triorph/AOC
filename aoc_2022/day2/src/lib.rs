@@ -8,13 +8,20 @@ pub struct Day2 {
     hand_pairs: Vec<(Hand, Hand)>,
 }
 
-impl AOCCalculator<usize> for Day2 {
+impl AOCCalculator for Day2 {
     fn new(filename: &str) -> Result<Day2, AOCFileOrParseError> {
         Ok(Day2 {
             hand_pairs: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day2 {
     fn calculate_day_a(&self) -> usize {
         self.hand_pairs
             .iter()
@@ -27,11 +34,6 @@ impl AOCCalculator<usize> for Day2 {
             .iter()
             .map(|(them, us)| us.calculate_score_vs_day_b(them))
             .sum()
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
 

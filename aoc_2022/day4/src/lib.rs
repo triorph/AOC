@@ -8,13 +8,20 @@ pub struct Day4 {
     assignments: Vec<Assignment>,
 }
 
-impl AOCCalculator<usize> for Day4 {
+impl AOCCalculator for Day4 {
     fn new(filename: &str) -> Result<Day4, AOCFileOrParseError> {
         Ok(Day4 {
             assignments: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day4 {
     fn calculate_day_a(&self) -> usize {
         self.assignments
             .iter()
@@ -27,11 +34,6 @@ impl AOCCalculator<usize> for Day4 {
             .iter()
             .filter(|assignment| (*assignment).partial_overlap())
             .count()
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
 

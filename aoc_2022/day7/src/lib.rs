@@ -7,13 +7,20 @@ pub struct Day7 {
     directory_sizes: Vec<usize>,
 }
 
-impl AOCCalculator<usize> for Day7 {
+impl AOCCalculator for Day7 {
     fn new(filename: &str) -> Result<Day7, AOCFileOrParseError> {
         Ok(Day7 {
             directory_sizes: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day7 {
     fn calculate_day_a(&self) -> usize {
         self.directory_sizes
             .iter()
@@ -29,11 +36,6 @@ impl AOCCalculator<usize> for Day7 {
             .filter(|&&size| currently_left + size >= 30000000)
             .min()
             .unwrap()
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
 

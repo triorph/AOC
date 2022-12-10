@@ -8,79 +8,62 @@ use pixel_map::PixelMap;
 pub struct Day10 {
     instructions: Vec<Option<isize>>,
     x: isize,
-    cycle: usize,
+    pixel_map: PixelMap,
+    target: usize,
+    day_a_result: usize,
 }
 
-impl AOCCalculator<isize> for Day10 {
+impl AOCCalculator for Day10 {
     fn new(filename: &str) -> Result<Day10, AOCFileOrParseError> {
         Ok(Day10 {
             instructions: parse_data(&read_input_file(filename)?)?,
             x: 1,
-            cycle: 1,
+            pixel_map: PixelMap::new(),
+            target: 20,
+            day_a_result: 0,
         })
     }
 
-    fn calculate_day_a(&self) -> isize {
-        let mut obj = self.clone();
-        let mut target = 20;
-        let mut ret = 0;
-        for instruction in self.instructions.iter() {
-            let x = obj.process_instruction(instruction, target);
-            if obj.cycle >= target && target <= 220 {
-                ret += target as isize * x;
-                target += 40;
-            }
-        }
-
-        ret
-    }
-
-    fn calculate_day_b(&self) -> isize {
-        let mut obj = self.clone();
-        let mut pixel_map = PixelMap::new();
-        for instruction in self.instructions.iter() {
-            obj.process_instruction_day_b(instruction, &mut pixel_map);
-        }
-        println!("Day b drawing is:\n{}", pixel_map);
-        0
-    }
-
     fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
+        let mut obj = self.clone();
+        println!("{}a answer is {:?}", name, obj.calculate_day_a());
+        println!("{}b answer is:\n{}", name, obj.pixel_map);
     }
 }
 
 impl Day10 {
-    fn process_instruction(&mut self, instruction: &Option<isize>, target: usize) -> isize {
-        match instruction {
-            Some(x) => {
-                self.x += x;
-                self.cycle += 2;
-                if self.cycle == target + 1 {
-                    self.x - x
-                } else {
-                    self.x
-                }
-            }
-            None => {
-                self.cycle += 1;
-                self.x
-            }
+    fn calculate_day_a(&mut self) -> usize {
+        for instruction in self.instructions.clone().iter() {
+            self.process_instruction(instruction);
+        }
+
+        self.day_a_result
+    }
+
+    fn calculate_day_b(&mut self) -> String {
+        for instruction in self.instructions.clone().iter() {
+            self.process_instruction(instruction);
+        }
+        format!("{}", self.pixel_map)
+    }
+
+    fn increase_cycle(&mut self) {
+        self.pixel_map.draw_next_pixel(self.x);
+        if self.pixel_map.cycle >= self.target && self.target <= 240 {
+            self.day_a_result += self.x as usize * self.target;
+            self.target += 40;
         }
     }
 
-    fn process_instruction_day_b(&mut self, instruction: &Option<isize>, pixel_map: &mut PixelMap) {
+    fn process_instruction(&mut self, instruction: &Option<isize>) {
         match instruction {
             Some(x) => {
-                pixel_map.draw_current(self.x);
-                pixel_map.draw_current(self.x);
+                self.increase_cycle();
+                self.increase_cycle();
                 self.x += x;
-                self.cycle += 2;
             }
             None => {
-                pixel_map.draw_current(self.x);
-                self.cycle += 1;
+                self.increase_cycle();
             }
         }
     }
@@ -102,7 +85,13 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day10 = Day10::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let mut expected: String = "".into();
+        expected += "##..##..##..##..##..##..##..##..##..##..\n";
+        expected += "###...###...###...###...###...###...###.\n";
+        expected += "####....####....####....####....####....\n";
+        expected += "#####.....#####.....#####.....#####.....\n";
+        expected += "######......######......######......####\n";
+        expected += "#######.......#######.......#######.....\n";
         let actual = day10.calculate_day_b();
         assert_eq!(expected, actual);
     }

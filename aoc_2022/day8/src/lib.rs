@@ -9,13 +9,20 @@ pub struct Day8 {
     trees: Vec<Vec<u8>>,
 }
 
-impl AOCCalculator<usize> for Day8 {
+impl AOCCalculator for Day8 {
     fn new(filename: &str) -> Result<Day8, AOCFileOrParseError> {
         Ok(Day8 {
             trees: parse_data(&read_input_file(filename)?)?,
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day8 {
     fn calculate_day_a(&self) -> usize {
         self.get_all_points()
             .map(|point| self.is_point_viewable_from_edge(&point))
@@ -30,13 +37,6 @@ impl AOCCalculator<usize> for Day8 {
             .unwrap_or(0)
     }
 
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
-    }
-}
-
-impl Day8 {
     fn get_slice_left<'a>(&'a self, point: &'a Point) -> TreeIterator {
         Box::new((0..point.0).map(|x| self.get_at_point(&(x, point.1))).rev())
     }

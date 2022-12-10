@@ -6,7 +6,7 @@ pub struct Day1 {
     calories: Vec<usize>,
 }
 
-impl AOCCalculator<usize> for Day1 {
+impl AOCCalculator for Day1 {
     fn new(filename: &str) -> Result<Day1, AOCFileOrParseError> {
         Ok(Day1 {
             calories: parse_data(&read_input_file(filename)?)?
@@ -16,6 +16,13 @@ impl AOCCalculator<usize> for Day1 {
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {:?}", name, self.calculate_day_a());
+        println!("{}b answer is {:?}", name, self.calculate_day_b());
+    }
+}
+
+impl Day1 {
     fn calculate_day_a(&self) -> usize {
         *self.calories.iter().max().unwrap_or(&0)
     }
@@ -31,11 +38,6 @@ impl AOCCalculator<usize> for Day1 {
             })
             .iter()
             .sum()
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
 

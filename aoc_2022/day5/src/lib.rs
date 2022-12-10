@@ -9,7 +9,7 @@ pub struct Day5 {
     instructions: Vec<Instruction>,
 }
 
-impl AOCCalculator<String> for Day5 {
+impl AOCCalculator for Day5 {
     fn new(filename: &str) -> Result<Day5, AOCFileOrParseError> {
         let (stack_set, move_list) = parse_data(&read_input_file(filename)?)?;
         Ok(Day5 {
@@ -18,6 +18,13 @@ impl AOCCalculator<String> for Day5 {
         })
     }
 
+    fn print_results(&self, name: &str) {
+        println!("{}a answer is {}", name, self.calculate_day_a());
+        println!("{}b answer is {}", name, self.calculate_day_b());
+    }
+}
+
+impl Day5 {
     fn calculate_day_a(&self) -> String {
         let mut stack_set = self.stack_set.clone();
         stack_set.process_moves_a(&self.instructions);
@@ -28,11 +35,6 @@ impl AOCCalculator<String> for Day5 {
         let mut stack_set = self.stack_set.clone();
         stack_set.process_moves_b(&self.instructions);
         stack_set.show_top_values()
-    }
-
-    fn print_results(&self, name: &str) {
-        println!("{}a answer is {}", name, self.calculate_day_a());
-        println!("{}b answer is {}", name, self.calculate_day_b());
     }
 }
 
