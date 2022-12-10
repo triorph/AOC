@@ -27,22 +27,26 @@ impl AOCCalculator for Day10 {
     fn print_results(&self, name: &str) {
         let mut obj = self.clone();
         println!("{}a answer is {:?}", name, obj.calculate_day_a());
-        println!("{}b answer is:\n{}", name, obj.pixel_map);
+        println!("{}b answer is:\n{}", name, obj.calculate_day_b());
     }
 }
 
 impl Day10 {
     fn calculate_day_a(&mut self) -> usize {
-        for instruction in self.instructions.clone().iter() {
-            self.process_instruction(instruction);
+        if self.pixel_map.cycle == 0 {
+            for instruction in self.instructions.clone().iter() {
+                self.process_instruction(instruction);
+            }
         }
 
         self.day_a_result
     }
 
     fn calculate_day_b(&mut self) -> String {
-        for instruction in self.instructions.clone().iter() {
-            self.process_instruction(instruction);
+        if self.pixel_map.cycle == 0 {
+            for instruction in self.instructions.clone().iter() {
+                self.process_instruction(instruction);
+            }
         }
         format!("{}", self.pixel_map)
     }
