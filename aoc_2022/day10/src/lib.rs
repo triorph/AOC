@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_calculate_day_a() {
-        let day10 = Day10::new("data/test_data.txt").unwrap();
+        let mut day10 = Day10::new("data/test_data.txt").unwrap();
         let expected = 13140;
         let actual = day10.calculate_day_a();
         assert_eq!(expected, actual);
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_calculate_day_b() {
-        let day10 = Day10::new("data/test_data.txt").unwrap();
+        let mut day10 = Day10::new("data/test_data.txt").unwrap();
         let mut expected: String = "".into();
         expected += "##..##..##..##..##..##..##..##..##..##..\n";
         expected += "###...###...###...###...###...###...###.\n";
