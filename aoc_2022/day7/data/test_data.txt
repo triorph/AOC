@@ -3,19 +3,19 @@ $ ls
 dir a
 14848514 b.txt
 8504156 c.dat
-dir d
+dir a
 $ cd a
 $ ls
-dir e
+dir a
 29116 f
 2557 g
 62596 h.lst
-$ cd e
+$ cd a
 $ ls
 584 i
 $ cd ..
 $ cd ..
-$ cd d
+$ cd a
 $ ls
 4060174 j
 8033020 d.log
