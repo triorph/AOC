@@ -20,7 +20,7 @@ pub struct Monkey {
 }
 
 impl Monkey {
-    pub fn take_turn_day_a(&self) -> (HashMap<usize, Vec<usize>>, Monkey) {
+    pub fn take_turn_day_a(&self) -> HashMap<usize, Vec<usize>> {
         let mut ret: HashMap<usize, Vec<usize>> = HashMap::new();
         for item in self.starting_items.iter() {
             let worry_val = self.worrify_day_a(item);
@@ -33,21 +33,22 @@ impl Monkey {
                 .and_modify(|v| v.push(worry_val))
                 .or_insert_with(|| vec![worry_val]);
         }
-        (
-            ret,
-            Monkey {
-                index: self.index,
-                starting_items: Vec::new(),
-                operation: self.operation.clone(),
-                test_condition: self.test_condition,
-                true_case: self.true_case,
-                false_case: self.false_case,
-                items_processed: self.items_processed + self.starting_items.len(),
-            },
-        )
+        ret
     }
 
-    pub fn take_turn_day_b(&self, shared_modulo: usize) -> (HashMap<usize, Vec<usize>>, Monkey) {
+    pub fn empty_monkey(&self) -> Monkey {
+        Monkey {
+            index: self.index,
+            starting_items: Vec::new(),
+            operation: self.operation.clone(),
+            test_condition: self.test_condition,
+            true_case: self.true_case,
+            false_case: self.false_case,
+            items_processed: self.items_processed + self.starting_items.len(),
+        }
+    }
+
+    pub fn take_turn_day_b(&self, shared_modulo: usize) -> HashMap<usize, Vec<usize>> {
         let mut ret: HashMap<usize, Vec<usize>> = HashMap::new();
         for item in self.starting_items.iter() {
             let worry_val = self.worrify_day_b(item) % shared_modulo;
@@ -60,18 +61,7 @@ impl Monkey {
                 .and_modify(|v| v.push(worry_val))
                 .or_insert_with(|| vec![worry_val]);
         }
-        (
-            ret,
-            Monkey {
-                index: self.index,
-                starting_items: Vec::new(),
-                operation: self.operation.clone(),
-                test_condition: self.test_condition,
-                true_case: self.true_case,
-                false_case: self.false_case,
-                items_processed: self.items_processed + self.starting_items.len(),
-            },
-        )
+        ret
     }
     fn worrify_day_b(&self, x: &usize) -> usize {
         match self.operation {
