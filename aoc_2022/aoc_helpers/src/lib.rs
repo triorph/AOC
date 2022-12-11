@@ -20,6 +20,34 @@ impl std::fmt::Display for AOCFileOrParseError {
     }
 }
 
+pub fn gcd_pair(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd_pair(b, a % b)
+    }
+}
+
+fn gcd(vals: &[usize]) -> usize {
+    vals.iter()
+        .map(|x| *x)
+        .reduce(|a: usize, b: usize| gcd_pair(a, b))
+        .unwrap()
+}
+
+pub fn lcm(vals: &[usize]) -> usize {
+    println!("vals: {:?}", vals);
+    let gcd: usize = gcd(vals);
+    println!("gcd: {:?}", gcd);
+    let lcm = vals
+        .iter()
+        .copied()
+        .reduce(|a: usize, b: usize| (a * b / gcd))
+        .unwrap();
+    println!("lcm: {:?}", lcm);
+    lcm
+}
+
 pub trait AOCCalculator {
     fn new(input_file: &str) -> Result<Self, AOCFileOrParseError>
     where

@@ -1,6 +1,6 @@
 mod monkey;
 mod parser;
-use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use aoc_helpers::{lcm, read_input_file, AOCCalculator, AOCFileOrParseError};
 use monkey::Monkey;
 use parser::parse_data;
 
@@ -26,15 +26,26 @@ impl AOCCalculator for Day11 {
 impl Day11 {
     fn calculate_day_a(&mut self) -> usize {
         for _ in 0..20 {
-            self.run_one_round();
-            println!("self: {}", self);
+            self.run_one_round_day_a();
         }
         self.get_monkey_score()
     }
 
-    fn run_one_round(&mut self) {
+    fn run_one_round_day_a(&mut self) {
         for i in 0..self.monkeys.len() {
-            let (result, monkey) = self.monkeys[i].take_turn();
+            let (result, monkey) = self.monkeys[i].take_turn_day_a();
+            self.monkeys[i] = monkey;
+            self.monkeys = self
+                .monkeys
+                .iter()
+                .map(|monkey| monkey.next_turn(&result))
+                .collect();
+        }
+    }
+
+    fn run_one_round_day_b(&mut self, shared_modulo: usize) {
+        for i in 0..self.monkeys.len() {
+            let (result, monkey) = self.monkeys[i].take_turn_day_b(shared_modulo);
             self.monkeys[i] = monkey;
             self.monkeys = self
                 .monkeys
@@ -52,11 +63,32 @@ impl Day11 {
             .collect::<Vec<usize>>();
         processed.sort();
         processed.reverse();
+        println!("processed: {:?}", processed);
         processed[0] * processed[1]
     }
 
-    fn calculate_day_b(&self) -> usize {
-        0
+    fn calculate_day_b(&mut self) -> usize {
+        let shared_modulo = lcm(&self
+            .monkeys
+            .iter()
+            .map(|monkey| monkey.test_condition)
+            .collect::<Vec<usize>>());
+        for monkey in self.monkeys.iter() {
+            println!(
+                "monkey.test_condition % shared_modulo
+                        : {:?}",
+                (shared_modulo % monkey.test_condition)
+            );
+        }
+        println!("shared_modulo: {:?}", shared_modulo);
+        for i in 0..10000 {
+            if i % 1000 == 0 {
+                println!("i: {:?}", i);
+                println!("self.get_monkey_score(): {:?}", self.get_monkey_score());
+            }
+            self.run_one_round_day_b(shared_modulo);
+        }
+        self.get_monkey_score()
     }
 }
 
@@ -84,8 +116,8 @@ mod tests {
 
     #[test]
     fn test_calculate_day_b() {
-        let day11 = Day11::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let mut day11 = Day11::new("data/test_data.txt").unwrap();
+        let expected = 2713310158;
         let actual = day11.calculate_day_b();
         assert_eq!(expected, actual);
     }

@@ -1,29 +1,9 @@
 extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
-#[derive(Debug, PartialEq)]
-enum Operation {
-    Add(usize),
-    Multiply(usize),
-}
-
 peg::parser! { pub grammar day1_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    rule starting_items() -> Vec<usize>
-        = " "+ "Starting items: " items:number() ++ ", " "\n"+ { items }
-    rule add() -> Operation
-        = "+ " n:number() { Operation::Add(n) }
-    rule multiply() -> Operation
-        = "* " n:number() { Operation::Multiply(n) }
-    rule operation() -> Operation
-        = " "+ "Operation: new = old " operation:(add() / multiply()) "\n"+ { operation }
-    rule test_condition() -> usize
-        = " "+ "Test: divisible by " n:number() { n }
-    rule true_case() -> usize
-        = " "+ "If true: throw to monkey " n: number() { n }
-    rule false_case() -> usize
-        = " "+ "If false: throw to monkey " n:number() { n }
     rule calory_package() -> Vec<usize>
         = calories:number() ++ ("\n")
     pub rule parse() -> Vec<Vec<usize>>
