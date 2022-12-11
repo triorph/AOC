@@ -20,21 +20,34 @@ pub struct Monkey {
 }
 
 impl Monkey {
-    pub fn take_turn(&self) -> HashMap<usize, Vec<usize>> {
+    pub fn take_turn(&self) -> (HashMap<usize, Vec<usize>>, Monkey) {
         let mut ret: HashMap<usize, Vec<usize>> = HashMap::new();
         for item in self.starting_items.iter() {
             let worry_val = self.worrify(item);
-            if (worry_val % self.test_condition) == 0 {
-                ret.entry(self.true_case)
-                    .and_modify(|v| v.push(worry_val))
-                    .or_insert_with(|| vec![worry_val]);
+            println!("item: {:?}", item);
+            println!("worry_val: {:?}", worry_val);
+            let throw_to = if (worry_val % self.test_condition) == 0 {
+                self.true_case
             } else {
-                ret.entry(self.false_case)
-                    .and_modify(|v| v.push(worry_val))
-                    .or_insert_with(|| vec![worry_val]);
-            }
+                self.false_case
+            };
+            println!("throw_to: {:?}", throw_to);
+            ret.entry(throw_to)
+                .and_modify(|v| v.push(worry_val))
+                .or_insert_with(|| vec![worry_val]);
         }
-        ret
+        (
+            ret,
+            Monkey {
+                index: self.index,
+                starting_items: Vec::new(),
+                operation: self.operation.clone(),
+                test_condition: self.test_condition,
+                true_case: self.true_case,
+                false_case: self.false_case,
+                items_processed: self.items_processed + self.starting_items.len(),
+            },
+        )
     }
 
     fn worrify(&self, x: &usize) -> usize {
@@ -47,13 +60,12 @@ impl Monkey {
         calculated / 3
     }
 
-    pub fn next_turn(&self, results: &[HashMap<usize, Vec<usize>>]) -> Monkey {
+    pub fn next_turn(&self, result: &HashMap<usize, Vec<usize>>) -> Monkey {
         let mut starting_items = Vec::new();
-        for result in results.iter() {
-            let our_result = result.get(&self.index);
-            if let Some(our_result) = our_result {
-                starting_items.extend(our_result)
-            }
+        starting_items.extend(self.starting_items.clone());
+        let our_result = result.get(&self.index);
+        if let Some(our_result) = our_result {
+            starting_items.extend(our_result)
         }
 
         Monkey {
@@ -63,7 +75,7 @@ impl Monkey {
             test_condition: self.test_condition,
             true_case: self.true_case,
             false_case: self.false_case,
-            items_processed: self.items_processed + self.starting_items.len(),
+            items_processed: self.items_processed,
         }
     }
 }

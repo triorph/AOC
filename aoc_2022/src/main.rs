@@ -2,6 +2,7 @@ use aoc_helpers::AOCCalculator;
 use color_eyre::eyre::Result;
 use day1::Day1;
 use day10::Day10;
+use day11::Day11;
 use day2::Day2;
 use day3::Day3;
 use day4::Day4;
@@ -10,7 +11,6 @@ use day6::Day6;
 use day7::Day7;
 use day8::Day8;
 use day9::Day9;
-// use day11::Day11;
 // use day12::Day12;
 // use day13::Day13;
 // use day14::Day14;
@@ -26,8 +26,8 @@ use day9::Day9;
 // use day24::Day24;
 // use day25::Day25
 
-const ALL_CURRENT_DAYS: [&str; 10] = [
-    "day1", "day2", "day3", "day4", "day5", "day6", "day7", "day8", "day9", "day10",
+const ALL_CURRENT_DAYS: [&str; 11] = [
+    "day1", "day2", "day3", "day4", "day5", "day6", "day7", "day8", "day9", "day10", "day11",
 ];
 
 fn run_day_if_enabled(day: Box<dyn AOCCalculator>, name: &str, allowed_days: &[&str]) {
@@ -89,7 +89,11 @@ fn main() -> Result<()> {
         "day10",
         &allowed_days,
     );
-    // run_day_if_enabled(Box::new(Day11::new("day11/data/input_data.txt")?), "day11", &allowed_days);
+    run_day_if_enabled(
+        Box::new(Day11::new("day11/data/input_data.txt")?),
+        "day11",
+        &allowed_days,
+    );
     // run_day_if_enabled(Box::new(Day12::new("day12/data/input_data.txt")?), "day12", &allowed_days);
     // run_day_if_enabled(Box::new(Day13::new("day13/data/input_data.txt")?), "day13", &allowed_days);
     // run_day_if_enabled(Box::new(Day14::new("day14/data/input_data.txt")?), "day14", &allowed_days);

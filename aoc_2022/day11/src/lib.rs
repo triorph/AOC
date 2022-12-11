@@ -3,7 +3,6 @@ mod parser;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use monkey::Monkey;
 use parser::parse_data;
-use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Day11 {
@@ -28,20 +27,21 @@ impl Day11 {
     fn calculate_day_a(&mut self) -> usize {
         for _ in 0..20 {
             self.run_one_round();
+            println!("self: {}", self);
         }
         self.get_monkey_score()
     }
 
     fn run_one_round(&mut self) {
-        let mut results: Vec<HashMap<usize, Vec<usize>>> = Vec::new();
-        for monkey in self.monkeys.iter() {
-            results.push(monkey.take_turn());
+        for i in 0..self.monkeys.len() {
+            let (result, monkey) = self.monkeys[i].take_turn();
+            self.monkeys[i] = monkey;
+            self.monkeys = self
+                .monkeys
+                .iter()
+                .map(|monkey| monkey.next_turn(&result))
+                .collect();
         }
-        self.monkeys = self
-            .monkeys
-            .iter()
-            .map(|monkey| monkey.next_turn(&results))
-            .collect();
     }
 
     fn get_monkey_score(&self) -> usize {
@@ -57,6 +57,15 @@ impl Day11 {
 
     fn calculate_day_b(&self) -> usize {
         0
+    }
+}
+
+impl std::fmt::Display for Day11 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for monkey in self.monkeys.iter() {
+            writeln!(f, "Monkey {}: {:?}", monkey.index, monkey.starting_items)?;
+        }
+        Ok(())
     }
 }
 
