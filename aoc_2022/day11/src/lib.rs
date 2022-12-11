@@ -1,9 +1,10 @@
 mod monkey;
 mod parser;
-use aoc_helpers::{least_common_multiple, read_input_file, AOCCalculator, AOCFileOrParseError};
+use aoc_helpers::hash_utils::HashVec;
+use aoc_helpers::modular_math::least_common_multiple;
+use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use monkey::Monkey;
 use parser::parse_data;
-use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Day11 {
@@ -26,9 +27,17 @@ impl AOCCalculator for Day11 {
 }
 
 impl Day11 {
-    fn calculate_day_a(&mut self) -> u64 {
+    fn calculate_day_a(&mut self) -> usize {
         for _ in 0..20 {
             self.run_one_round_day_a();
+        }
+        self.get_monkey_score()
+    }
+
+    fn calculate_day_b(&mut self) -> usize {
+        let shared_modulo = self.get_shared_modulo();
+        for _ in 0..10000 {
+            self.run_one_round_day_b(shared_modulo);
         }
         self.get_monkey_score()
     }
@@ -49,7 +58,7 @@ impl Day11 {
         }
     }
 
-    fn apply_result_to_monkeys(&mut self, result: &HashMap<usize, Vec<usize>>) {
+    fn apply_result_to_monkeys(&mut self, result: &HashVec<usize, usize>) {
         self.monkeys = self
             .monkeys
             .iter()
@@ -57,18 +66,18 @@ impl Day11 {
             .collect();
     }
 
-    fn get_monkey_score(&self) -> u64 {
+    fn get_monkey_score(&self) -> usize {
         let mut processed = self
             .monkeys
             .iter()
-            .map(|monkey| monkey.items_processed as u64)
-            .collect::<Vec<u64>>();
+            .map(|monkey| monkey.items_processed as usize)
+            .collect::<Vec<usize>>();
         processed.sort();
         processed.reverse();
         processed[0] * processed[1]
     }
 
-    fn calculate_day_b(&mut self) -> u64 {
+    fn get_shared_modulo(&self) -> usize {
         let shared_modulo = self
             .monkeys
             .iter()
@@ -77,10 +86,7 @@ impl Day11 {
         for monkey in self.monkeys.iter() {
             assert_eq!((shared_modulo % monkey.test_condition), 0);
         }
-        for _ in 0..10000 {
-            self.run_one_round_day_b(shared_modulo);
-        }
-        self.get_monkey_score()
+        shared_modulo
     }
 }
 

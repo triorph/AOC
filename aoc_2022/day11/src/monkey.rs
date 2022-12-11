@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use aoc_helpers::hash_utils::HashVec;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operation {
@@ -20,8 +20,8 @@ pub struct Monkey {
 }
 
 impl Monkey {
-    pub fn take_turn_day_a(&self) -> HashMap<usize, Vec<usize>> {
-        let mut ret: HashMap<usize, Vec<usize>> = HashMap::new();
+    pub fn take_turn_day_a(&self) -> HashVec<usize, usize> {
+        let mut ret: HashVec<usize, usize> = HashVec::new();
         for item in self.starting_items.iter() {
             let worry_val = self.worrify_day_a(item);
             let throw_to = if (worry_val % self.test_condition) == 0 {
@@ -29,9 +29,7 @@ impl Monkey {
             } else {
                 self.false_case
             };
-            ret.entry(throw_to)
-                .and_modify(|v| v.push(worry_val))
-                .or_insert_with(|| vec![worry_val]);
+            ret.push(throw_to, worry_val)
         }
         ret
     }
@@ -48,8 +46,8 @@ impl Monkey {
         }
     }
 
-    pub fn take_turn_day_b(&self, shared_modulo: usize) -> HashMap<usize, Vec<usize>> {
-        let mut ret: HashMap<usize, Vec<usize>> = HashMap::new();
+    pub fn take_turn_day_b(&self, shared_modulo: usize) -> HashVec<usize, usize> {
+        let mut ret: HashVec<usize, usize> = HashVec::new();
         for item in self.starting_items.iter() {
             let worry_val = self.worrify_day_b(item) % shared_modulo;
             let throw_to = if (worry_val % self.test_condition) == 0 {
@@ -57,9 +55,7 @@ impl Monkey {
             } else {
                 self.false_case
             };
-            ret.entry(throw_to)
-                .and_modify(|v| v.push(worry_val))
-                .or_insert_with(|| vec![worry_val]);
+            ret.push(throw_to, worry_val)
         }
         ret
     }
@@ -82,13 +78,12 @@ impl Monkey {
         ret / 3
     }
 
-    pub fn next_turn(&self, result: &HashMap<usize, Vec<usize>>) -> Monkey {
+    pub fn next_turn(&self, result: &HashVec<usize, usize>) -> Monkey {
         let mut starting_items = Vec::new();
         starting_items.extend(self.starting_items.clone());
+
         let our_result = result.get(&self.index);
-        if let Some(our_result) = our_result {
-            starting_items.extend(our_result)
-        }
+        starting_items.extend(our_result);
 
         Monkey {
             index: self.index,

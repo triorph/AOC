@@ -1,16 +1,15 @@
+use aoc_helpers::hash_utils::HashVec;
 use itertools::Itertools;
-use std::collections::HashMap;
 
 pub type Instruction = (usize, usize, usize);
-pub type Stack = Vec<char>;
 
 #[derive(Debug, Clone)]
 pub struct StackSet {
-    stack_set: HashMap<usize, Stack>,
+    stack_set: HashVec<usize, char>,
 }
 
 impl StackSet {
-    pub fn new(stack_set: HashMap<usize, Stack>) -> StackSet {
+    pub fn new(stack_set: HashVec<usize, char>) -> StackSet {
         StackSet { stack_set }
     }
     pub fn process_moves_a(&mut self, instructions: &[Instruction]) {
@@ -48,11 +47,11 @@ impl StackSet {
     }
 
     fn push_to(&mut self, dest: &usize, input_stack: &[char]) {
-        self.stack_set.get_mut(dest).unwrap().extend(input_stack);
+        self.stack_set.extend(*dest, input_stack)
     }
 
-    fn get_last_value_from(&self, source: &usize) -> Option<&char> {
-        self.stack_set.get(source).unwrap().last()
+    fn get_last_value_from(&self, source: &usize) -> Option<char> {
+        self.stack_set.get(source).last().copied()
     }
 
     pub fn show_top_values(&self) -> String {

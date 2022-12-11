@@ -1,7 +1,7 @@
 extern crate peg;
-use crate::stack_set::{Instruction, Stack};
+use crate::stack_set::Instruction;
+use aoc_helpers::hash_utils::HashVec;
 use aoc_helpers::AOCFileOrParseError;
-use std::collections::HashMap;
 
 peg::parser! { pub grammar day5_parser() for str {
     rule number() -> usize
@@ -16,7 +16,7 @@ peg::parser! { pub grammar day5_parser() for str {
         = line_of_values:value() ++ " " {line_of_values}
     rule names() -> Vec<usize>
         = " " * names:number() ++ (" " +) " " * { names }
-    rule build_vertical_values() -> HashMap<usize, Vec<char>>
+    rule build_vertical_values() -> HashVec<usize, char>
         = lines_of_horizontals:horizontal_values() ++ "\n" ("\n") names:names() "\n" {
             convert_horizontal_to_vertical(names, lines_of_horizontals)
         }
@@ -26,7 +26,7 @@ peg::parser! { pub grammar day5_parser() for str {
         }
     rule moves() -> Vec<Instruction>
         = moves:move() ++ "\n" { moves }
-    pub rule parse() -> (HashMap<usize, Stack>, Vec<Instruction>)
+    pub rule parse() -> (HashVec<usize, char>, Vec<Instruction>)
         = stack_set:build_vertical_values() "\n" move_list:moves() "\n"* {
             (stack_set, move_list)
         }
@@ -35,15 +35,12 @@ peg::parser! { pub grammar day5_parser() for str {
 fn convert_horizontal_to_vertical(
     names: Vec<usize>,
     lines_of_horizontals: Vec<Vec<Option<char>>>,
-) -> HashMap<usize, Vec<char>> {
-    let mut ret: HashMap<usize, Vec<char>> = HashMap::new();
-    for name in names.iter() {
-        ret.insert(*name, Vec::new());
-    }
+) -> HashVec<usize, char> {
+    let mut ret: HashVec<usize, char> = HashVec::new();
     for line in lines_of_horizontals.iter().rev() {
         for (name, value) in names.iter().zip(line) {
             if let Some(value) = value {
-                (ret.entry(*name)).and_modify(|vertical| vertical.push(*value));
+                ret.push(*name, *value);
             }
         }
     }
@@ -52,7 +49,7 @@ fn convert_horizontal_to_vertical(
 
 pub fn parse_data(
     input: &str,
-) -> Result<(HashMap<usize, Stack>, Vec<Instruction>), AOCFileOrParseError> {
+) -> Result<(HashVec<usize, char>, Vec<Instruction>), AOCFileOrParseError> {
     if let Ok(ret) = day5_parser::parse(input) {
         Ok(ret)
     } else {

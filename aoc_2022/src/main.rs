@@ -45,9 +45,10 @@ const ALL_CURRENT_DAYS: [&str; 12] = [
 ];
 
 fn run_day_if_enabled(day: Box<dyn AOCCalculator>, name: &str, allowed_days: &[&str]) {
-    if allowed_days.contains(&name) {
-        day.print_results(name)
+    if !allowed_days.contains(&name) {
+        return;
     }
+    day.print_results(name)
 }
 fn main() -> Result<()> {
     color_eyre::install()?;

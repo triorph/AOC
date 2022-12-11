@@ -1,6 +1,8 @@
 mod parser;
 use crate::parser::parse_data;
-use aoc_helpers::{hashset_from_vec, read_input_file, AOCCalculator, AOCFileOrParseError};
+use aoc_helpers::hash_utils::FromVec;
+use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use std::collections::HashSet;
 
 pub struct Day6 {
     data: String,
@@ -40,7 +42,7 @@ impl Day6 {
 }
 
 fn test_all_different(vals: &[char]) -> bool {
-    hashset_from_vec(vals).len() == vals.len()
+    HashSet::from_vec(vals).len() == vals.len()
 }
 
 #[cfg(test)]

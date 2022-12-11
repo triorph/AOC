@@ -2,7 +2,8 @@ mod parser;
 mod priority;
 
 use crate::parser::parse_data;
-use aoc_helpers::{hashset_from_vec, read_input_file, AOCCalculator, AOCFileOrParseError};
+use aoc_helpers::hash_utils::FromVec;
+use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use priority::HasPriority;
 
 use std::collections::HashSet;
@@ -44,8 +45,8 @@ impl Day3 {
             .iter()
             .map(|line| {
                 vec![
-                    hashset_from_vec(&line[0..(line.len() / 2)]),
-                    hashset_from_vec(&line[(line.len() / 2)..]),
+                    HashSet::from_vec(&line[0..(line.len() / 2)]),
+                    HashSet::from_vec(&line[(line.len() / 2)..]),
                 ]
             })
             .collect()
@@ -57,7 +58,7 @@ impl Day3 {
             let mut inner_ret = Vec::new();
             for j in 0..3 {
                 let line = &self.rucksack_lines[3 * i + j];
-                inner_ret.push(hashset_from_vec(line))
+                inner_ret.push(HashSet::from_vec(line))
             }
             ret.push(inner_ret);
         }
