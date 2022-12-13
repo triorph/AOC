@@ -34,10 +34,8 @@ impl AOCCalculator for Day12 {
 
 impl Day12 {
     fn calculate_day_a(&mut self) -> usize {
-        let ret = self
-            .find_end(&self.find_starter_point())
-            .expect("A real answer");
-        ret
+        self.find_end(&self.find_starter_point())
+            .expect("A real answer")
     }
 
     fn find_end(&mut self, starting_point: &Point) -> Option<usize> {
