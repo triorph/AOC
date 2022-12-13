@@ -1,2 +1,3 @@
 target
 **/input_data.txt
+source_env.env
