@@ -53,6 +53,7 @@ impl Day12 {
                         } else {
                             current_best = Some(new_best);
                         }
+                        continue;
                     }
                 }
                 for neighbour in self.find_valid_neighbours(&point) {

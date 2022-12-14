@@ -5,18 +5,18 @@ use crate::parser::parse_data;
 mod point;
 mod wall;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use wall::Wall;
+use wall::Walls;
 
 use self::point::Point;
 
 pub struct Day14 {
-    walls: Vec<Wall>,
+    walls: Walls,
 }
 
 impl AOCCalculator for Day14 {
     fn new(filename: &str) -> Result<Day14, AOCFileOrParseError> {
         Ok(Day14 {
-            walls: parse_data(&read_input_file(filename)?)?,
+            walls: Walls::new(&parse_data(&read_input_file(filename)?)?),
         })
     }
 
@@ -29,43 +29,42 @@ impl AOCCalculator for Day14 {
 impl Day14 {
     fn calculate_day_a(&self) -> usize {
         let mut sands: HashSet<Point> = HashSet::new();
-        let starting_point = Point { x: 500, y: 0 };
-        let max_point = self.walls.iter().map(Wall::get_max_y).max().unwrap();
-        loop {
-            let final_point = self.drop_point_day_a(&starting_point.clone(), &sands, max_point);
-            if let Some(final_point) = final_point {
-                sands.insert(final_point);
-            } else {
-                break;
-            }
+        let mut last_path = vec![Point { x: 500, y: 0 }];
+        let max_point = self.walls.get_max_y();
+        while let Some(destination) = self.drop_point_day_a(&last_path, &sands, max_point) {
+            let last_entry = &destination[destination.len() - 1];
+            sands.insert(last_entry.clone());
+            last_path = destination;
         }
         sands.len()
     }
 
     fn drop_point_day_a(
         &self,
-        starting_point: &Point,
+        previous_path: &[Point],
         sands: &HashSet<Point>,
         max_point: isize,
-    ) -> Option<Point> {
-        let mut next_point = starting_point.clone();
-        while next_point.is_on_board(max_point) {
-            if let Some(point) = self.find_next_place_day_a(&next_point, sands) {
-                next_point = point
+    ) -> Option<Vec<Point>> {
+        let mut path: Vec<Point> = previous_path.to_vec();
+        while self
+            .find_next_place_day_a(&path[path.len() - 1], sands)
+            .is_none()
+        {
+            path.pop();
+        }
+        while path[path.len() - 1].is_on_board(max_point) {
+            if let Some(point) = self.find_next_place_day_a(&path[path.len() - 1], sands) {
+                path.push(point)
             } else {
-                return Some(next_point);
+                return Some(path);
             }
         }
         None
     }
 
-    fn walls_intersect_with(&self, point: &Point) -> bool {
-        self.walls.iter().any(|wall| wall.intersects_with(point))
-    }
-
     fn find_next_place_day_a(&self, point: &Point, sands: &HashSet<Point>) -> Option<Point> {
         for contender in point.get_next_contenders().iter() {
-            if !sands.contains(contender) && !self.walls_intersect_with(contender) {
+            if !sands.contains(contender) && !self.walls.intersects_with(contender) {
                 return Some(contender.clone());
             }
         }
@@ -74,34 +73,41 @@ impl Day14 {
 
     fn calculate_day_b(&self) -> usize {
         let mut sands: HashSet<Point> = HashSet::new();
-        let starting_point = Point { x: 500, y: 0 };
-        let max_point = self.walls.iter().map(Wall::get_max_y).max().unwrap();
-        loop {
-            let final_point = self.drop_point_day_b(&starting_point.clone(), &sands, max_point);
-            if let Some(final_point) = final_point {
-                if sands.contains(&final_point) {
-                    break;
-                }
-                sands.insert(final_point);
-            } else {
-                break;
-            }
+        let mut last_path = vec![Point { x: 500, y: 0 }];
+        let max_point = self.walls.get_max_y();
+        while let Some(destination) = self.drop_point_day_b(&last_path, &sands, max_point) {
+            let last_entry = &destination[destination.len() - 1];
+            sands.insert(last_entry.clone());
+            last_path = destination;
         }
-        sands.len()
+        sands.len() + 1 // include the starting point
     }
 
     fn drop_point_day_b(
         &self,
-        starting_point: &Point,
+        previous_path: &[Point],
         sands: &HashSet<Point>,
         max_point: isize,
-    ) -> Option<Point> {
-        let mut next_point = starting_point.clone();
+    ) -> Option<Vec<Point>> {
+        let mut path: Vec<Point> = previous_path.to_vec();
+        while !path.is_empty()
+            && self
+                .find_next_place_day_b(&path[path.len() - 1], sands, max_point)
+                .is_none()
+        {
+            path.pop();
+        }
+        if path.is_empty() {
+            return None;
+        }
         loop {
-            if let Some(point) = self.find_next_place_day_b(&next_point, sands, max_point) {
-                next_point = point
+            if let Some(point) = self.find_next_place_day_b(&path[path.len() - 1], sands, max_point)
+            {
+                path.push(point)
+            } else if path.is_empty() {
+                return None;
             } else {
-                return Some(next_point);
+                return Some(path);
             }
         }
     }
@@ -114,7 +120,7 @@ impl Day14 {
     ) -> Option<Point> {
         for contender in point.get_next_contenders().iter() {
             if !sands.contains(contender)
-                && !self.walls_intersect_with(contender)
+                && !self.walls.intersects_with(contender)
                 && point.y < max_point + 1
             {
                 return Some(contender.clone());
@@ -156,7 +162,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b_real_input() {
         let day14 = Day14::new("data/input_data.txt").unwrap();
-        let expected = 93;
+        let expected = 26139;
         let actual = day14.calculate_day_b();
         assert_eq!(expected, actual);
     }

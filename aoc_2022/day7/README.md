@@ -1,5 +1,11 @@
 # Day 7
 
+Look at the pseudo directory/file structure of a disk
+a) Work out the size of each folder, and get the sum of all whose size is less
+than 100k
+b) Work out the smallest folder we can delete to free up the required amount of
+space
+
 This one took me a while. Struggled to start with just with parsing the data
 into enum types, which wasn't super difficult but was a bit tiresome. Once I
 finally got there, I was failing to work with the input_data vs the test_data

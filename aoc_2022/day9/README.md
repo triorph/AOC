@@ -3,6 +3,9 @@
 Rope follower. Or I guess you can think of it as making the pixels for a game of
 snake look nice.
 
+Day a: Find all the points that the tail follows for a 2 length rope
+Day b: Find all the points that the tail follows for a 10 length rope
+
 I think snake usually only moves directly left/right/up/down even on the
 pieces, whereas this allows for diagonal movements which isn't quite the same,
 but close enough.

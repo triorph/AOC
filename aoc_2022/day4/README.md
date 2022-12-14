@@ -3,6 +3,9 @@
 Given a list of 2 sets of ranges, first count how many have full overlap, and
 then how many have partial overlap.
 
+Day a) fully overlapped
+Day b) Partially overlapped
+
 This one was relatively easy (like still easy, but gave me less grief than
 yesterday's), but I explored with using type definitions and implementing
 traits on them. I was basically able to get the core stuff working without too

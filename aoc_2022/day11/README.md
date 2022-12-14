@@ -1,5 +1,12 @@
 # Day 11
 
+Monkeys throwing bananas.
+
+Monkeys throw bananas to other monkeys, based on some simple rules.
+Part a: divide by 3 each time, then figure out who to pass to
+Part b: Doesn't divide by 3 each time, so numbers get way too large to handle
+unless you do some modulo math
+
 I did the majority of this at my parents while having dinner. Thankfully mum and
 lulu were having intense conversations that didn't give me much time to speak,
 so I wasn't missed lol.

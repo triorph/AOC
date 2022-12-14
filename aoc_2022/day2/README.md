@@ -2,10 +2,10 @@
 
 Work out some rock paper scissor games.
 
-First is using a misunderstanding of X Y and Z as Rock Paper and Scissors in the
-input, then working out if its a win, draw or loss and getting the sum
+Day a: is using a misunderstanding of X Y and Z as Rock Paper and Scissors
+in the input, then working out if its a win, draw or loss and getting the sum
 
-Secondly is using X Y and Z as Loss Draw and Win then working out what the hand
+Day b: is using X Y and Z as Loss Draw and Win then working out what the hand
 would be to force that to happen and calculating the score.
 
 People were talking about the idea of some modulo functions that automatically
