@@ -1,18 +1,27 @@
 extern crate peg;
+use crate::point::Point;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day15_parser() for str {
-    rule number() -> usize
+    rule positive_number() -> isize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    pub rule parse() -> Vec<usize>
-        = lines_of_numbers:number() ++ ("\n" +) "\n" * {
-             { lines_of_numbers }
+    rule negative_number() -> isize
+        = "-" n:positive_number() { -n }
+    rule number() -> isize
+        = n:(negative_number() / positive_number()) { n }
+    rule line() -> (Point, Point)
+        = "Sensor at x=" x1:number() ", y=" y1:number() ": closest beacon is at x=" x2:number() ", y=" y2:number() {
+            (Point{x: x1, y: y1}, Point{x: x2, y: y2})
+        }
+    pub rule parse() -> Vec<(Point, Point)>
+        = lines:line() ++ ("\n") "\n" * {
+             { lines }
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<(), AOCFileOrParseError> {
-    if let Ok(_ret) = day15_parser::parse(input) {
-        Ok(())
+pub fn parse_data(input: &str) -> Result<Vec<(Point, Point)>, AOCFileOrParseError> {
+    if let Ok(ret) = day15_parser::parse(input) {
+        Ok(ret)
     } else {
         Err(AOCFileOrParseError)
     }
@@ -28,7 +37,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day15_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
-        assert_eq!(expected, actual)
+        assert_eq!(actual.len(), 14)
     }
 }

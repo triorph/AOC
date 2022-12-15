@@ -1,15 +1,19 @@
 mod parser;
+mod point;
+use std::collections::HashSet;
+
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use point::Point;
 
 pub struct Day15 {
-    data: (),
+    beacons: Vec<(Point, Point)>,
 }
 
 impl AOCCalculator for Day15 {
     fn new(filename: &str) -> Result<Day15, AOCFileOrParseError> {
         Ok(Day15 {
-            data: parse_data(&read_input_file(filename)?)?,
+            beacons: parse_data(&read_input_file(filename)?)?,
         })
     }
 
@@ -21,7 +25,20 @@ impl AOCCalculator for Day15 {
 
 impl Day15 {
     fn calculate_day_a(&self) -> usize {
-        0
+        self.invalidate_at_y(2000000)
+    }
+
+    fn invalidate_at_y(&self, y: isize) -> usize {
+        let mut ret = HashSet::new();
+        for (beacon, sensor) in self.beacons.iter() {
+            let distance = beacon.manhattan_distance(sensor);
+            let y_diff = (beacon.y - y).abs();
+            ret.extend(
+                ((beacon.x - (distance - y_diff))..(beacon.x + (distance - y_diff)))
+                    .map(|x| Point { x, y }),
+            )
+        }
+        ret.len()
     }
 
     fn calculate_day_b(&self) -> usize {
@@ -37,8 +54,8 @@ mod tests {
     #[test]
     fn test_calculate_day_a() {
         let day15 = Day15::new("data/test_data.txt").unwrap();
-        let expected = 0;
-        let actual = day15.calculate_day_a();
+        let expected = 26;
+        let actual = day15.invalidate_at_y(20);
         assert_eq!(expected, actual);
     }
 
