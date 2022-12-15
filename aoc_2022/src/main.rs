@@ -133,11 +133,11 @@ fn main() -> Result<()> {
         "day14",
         &allowed_days,
     );
-    // run_day_if_enabled(
-    //     Box::new(Day15::new("day15/data/input_data.txt")?),
-    //     "day15",
-    //     &allowed_days,
-    // );
+    run_day_if_enabled(
+        Box::new(Day15::new("day15/data/input_data.txt")?),
+        "day15",
+        &allowed_days,
+    );
     // run_day_if_enabled(Box::new(Day16::new("day16/data/input_data.txt")?), "day16", allowed_days);
     // run_day_if_enabled(Box::new(Day17::new("day17/data/input_data.txt")?), "day17", allowed_days);
     // run_day_if_enabled(Box::new(Day18::new("day18/data/input_data.txt")?), "day18", allowed_days);

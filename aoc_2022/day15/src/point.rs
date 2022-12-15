@@ -10,26 +10,33 @@ impl Point {
     }
 
     pub fn get_all_points_at_manhattan_distance(&self, distance: isize) -> Vec<Point> {
-        let mut ret = Vec::new();
-        for i in 0..distance {
-            // The way i've written this probably causes dupes at the corners, but that's fine.
+        let mut ret = Vec::with_capacity(distance as usize * 4);
+        for i in 0..(distance - 1) {
             ret.push(Point {
                 x: self.x - distance + i,
                 y: self.y - i,
             });
             ret.push(Point {
-                x: self.x + distance - i,
-                y: self.y - i,
-            });
-            ret.push(Point {
-                x: self.x - distance + i,
-                y: self.y + i,
+                x: self.x + i,
+                y: self.y - distance + i,
             });
             ret.push(Point {
                 x: self.x + distance - i,
                 y: self.y + i,
+            });
+            ret.push(Point {
+                x: self.x - i,
+                y: self.y + distance - i,
             });
         }
         ret
+    }
+
+    pub fn outside_max(&self, max: isize) -> bool {
+        !(0..=max).contains(&self.x) || !(0..=max).contains(&self.y)
+    }
+
+    pub fn calculate_tuning_frequency(&self) -> isize {
+        self.x * 4000000 + self.y
     }
 }
