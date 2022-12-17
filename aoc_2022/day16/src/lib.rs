@@ -103,9 +103,24 @@ impl Day16 {
                 .iter()
                 .flat_map(|state| state.visited.clone())
                 .collect();
+            let all_unvisited_nodes: Vec<String> =
+                self.tunnels.get_unvisited_valves(&all_visited_nodes);
             for (i, state) in state_vec.iter().enumerate() {
                 let current_room = state.visited.last().unwrap();
-                for unvisited in self.tunnels.get_unvisited_valves(&all_visited_nodes).iter() {
+                let potential: usize = all_unvisited_nodes
+                    .iter()
+                    .map(|dest| {
+                        self.tunnels.get_possible_pressure_relief(
+                            current_room,
+                            dest,
+                            state.distance_left,
+                        )
+                    })
+                    .sum();
+                if total_relief + potential < best_result {
+                    continue;
+                }
+                for unvisited in all_unvisited_nodes.iter() {
                     let distance_away = self.tunnels.get_distance_between(current_room, unvisited);
                     if distance_away + 1 < state.distance_left {
                         let mut next_state_vec = state_vec.clone();

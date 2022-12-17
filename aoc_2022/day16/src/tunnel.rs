@@ -40,7 +40,8 @@ impl Tunnels {
         ret.cache_distances();
         ret.cache_valuable_tunnels();
         println!(
-            "ret.cached_valuable_tunnels: {:?}",
+            "ret.cached_valuable_tunnels
+                : {:?}",
             ret.cached_valuable_tunnels
         );
         ret
@@ -114,5 +115,20 @@ impl Tunnels {
             .unwrap()
             .get(dest)
             .unwrap()
+    }
+
+    pub fn get_possible_pressure_relief(
+        &self,
+        source: &str,
+        dest: &str,
+        distance_left: usize,
+    ) -> usize {
+        let distance_between = self.get_distance_between(source, dest);
+        if distance_between + 1 > distance_left {
+            0
+        } else {
+            let rate = self.flow_rate(dest);
+            rate * (distance_left - distance_between - 1)
+        }
     }
 }
