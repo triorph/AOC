@@ -2,7 +2,6 @@ mod parser;
 mod tunnel;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use itertools::Itertools;
 use std::collections::VecDeque;
 
 use tunnel::Tunnels;
@@ -170,7 +169,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b_real_input() {
         let day16 = Day16::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 2752;
         let actual = day16.calculate_day_b();
         assert_eq!(expected, actual);
     }

@@ -39,11 +39,6 @@ impl Tunnels {
         };
         ret.cache_distances();
         ret.cache_valuable_tunnels();
-        println!(
-            "ret.cached_valuable_tunnels
-                : {:?}",
-            ret.cached_valuable_tunnels
-        );
         ret
     }
 
