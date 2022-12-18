@@ -81,6 +81,7 @@ impl Day16 {
     fn find_best_pressure_relief_day_b(&self) -> usize {
         let mut best_result = 0;
         let mut paths = VecDeque::new();
+        let mut count = 0;
         paths.push_back(vec![
             ExploreState {
                 relief: 0,
@@ -94,6 +95,7 @@ impl Day16 {
             },
         ]);
         while let Some(state_vec) = paths.pop_back() {
+            count += 1;
             let total_relief = state_vec.iter().map(|state| state.relief).sum();
             if total_relief > best_result {
                 best_result = total_relief
@@ -133,6 +135,7 @@ impl Day16 {
                 }
             }
         }
+        println!("count: {:?}", count);
         best_result
     }
 }
