@@ -51,7 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_day_a_real_input() {
+    fn test_real_input_calculate_day_a() {
         let skeleton = Skeleton::new("data/input_data.txt").unwrap();
         let expected = 0;
         let actual = skeleton.calculate_day_a();
@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_day_b_real_input() {
+    fn test_real_input_calculate_day_b() {
         let skeleton = Skeleton::new("data/input_data.txt").unwrap();
         let expected = 0;
         let actual = skeleton.calculate_day_b();

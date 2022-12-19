@@ -51,7 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_day_a_real_input() {
+    fn test_real_input_calculate_day_a() {
         let day19 = Day19::new("data/input_data.txt").unwrap();
         let expected = 0;
         let actual = day19.calculate_day_a();
@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_day_b_real_input() {
+    fn test_real_input_calculate_day_b() {
         let day19 = Day19::new("data/input_data.txt").unwrap();
         let expected = 0;
         let actual = day19.calculate_day_b();
