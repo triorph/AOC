@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Droplet {
     pub x: isize,
@@ -6,7 +8,7 @@ pub struct Droplet {
 }
 
 impl Droplet {
-    pub fn calculate_exposed_surface(&self, other_droplets: &[Droplet]) -> usize {
+    pub fn calculate_exposed_surface(&self, other_droplets: &HashSet<Droplet>) -> usize {
         self.get_neighbours()
             .into_iter()
             .filter(|neighbour| !other_droplets.contains(neighbour))

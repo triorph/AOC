@@ -7,20 +7,26 @@ use std::collections::{HashSet, VecDeque};
 
 use self::droplet::Droplet;
 
+#[derive(Clone)]
 pub struct Day18 {
-    droplets: Vec<Droplet>,
+    droplets: HashSet<Droplet>,
+    outside_cache: HashSet<Droplet>,
+    inside_cache: HashSet<Droplet>,
 }
 
 impl AOCCalculator for Day18 {
     fn new(filename: &str) -> Result<Day18, AOCFileOrParseError> {
         Ok(Day18 {
-            droplets: parse_data(&read_input_file(filename)?)?,
+            droplets: HashSet::from_vec(&parse_data(&read_input_file(filename)?)?),
+            inside_cache: HashSet::new(),
+            outside_cache: HashSet::new(),
         })
     }
 
     fn print_results(&self, name: &str) {
         println!("{}a answer is {:?}", name, self.calculate_day_a());
-        println!("{}b answer is {:?}", name, self.calculate_day_b());
+        let mut obj = self.clone();
+        println!("{}b answer is {:?}", name, obj.calculate_day_b());
     }
 }
 
@@ -32,21 +38,27 @@ impl Day18 {
             .sum()
     }
 
-    fn is_point_outside(&self, starting_droplet: &Droplet) -> bool {
-        let body = HashSet::from_vec(&self.droplets);
+    fn is_point_outside(&mut self, starting_droplet: &Droplet) -> bool {
         let mut seen: HashSet<Droplet> = HashSet::new();
         let mut stack = VecDeque::from(vec![*starting_droplet]);
         let bounds = self.get_bounds();
         while let Some(droplet) = stack.pop_front() {
-            if seen.contains(&droplet) || body.contains(&droplet) {
+            if seen.contains(&droplet) || self.droplets.contains(&droplet) {
                 continue;
-            } else if self.droplet_out_of_bounds(&droplet, bounds) {
+            } else if self.droplet_out_of_bounds(&droplet, bounds)
+                || self.outside_cache.contains(&droplet)
+            {
+                self.outside_cache.extend(seen);
                 return true;
+            } else if self.inside_cache.contains(&droplet) {
+                self.inside_cache.extend(seen);
+                return false;
             } else {
                 seen.insert(droplet);
                 stack.extend(droplet.get_neighbours())
             }
         }
+        self.inside_cache.extend(seen);
         false
     }
 
@@ -74,8 +86,9 @@ impl Day18 {
             || droplet.z > bounds.5
     }
 
-    fn calculate_day_b(&self) -> usize {
+    fn calculate_day_b(&mut self) -> usize {
         self.droplets
+            .clone()
             .iter()
             .map(|droplet| {
                 droplet
@@ -103,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_calculate_day_b() {
-        let day18 = Day18::new("data/test_data.txt").unwrap();
+        let mut day18 = Day18::new("data/test_data.txt").unwrap();
         let expected = 58;
         let actual = day18.calculate_day_b();
         assert_eq!(expected, actual);
@@ -119,8 +132,8 @@ mod tests {
 
     #[test]
     fn test_real_input_calculate_day_b() {
-        let day18 = Day18::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let mut day18 = Day18::new("data/input_data.txt").unwrap();
+        let expected = 2080;
         let actual = day18.calculate_day_b();
         assert_ne!(actual, 2070);
         assert_ne!(actual, 3374);
