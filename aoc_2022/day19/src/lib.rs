@@ -1,15 +1,18 @@
 mod parser;
+mod robot;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
+use self::robot::Blueprint;
+
 pub struct Day19 {
-    data: (),
+    blueprints: Vec<Blueprint>,
 }
 
 impl AOCCalculator for Day19 {
     fn new(filename: &str) -> Result<Day19, AOCFileOrParseError> {
         Ok(Day19 {
-            data: parse_data(&read_input_file(filename)?)?,
+            blueprints: parse_data(&read_input_file(filename)?)?,
         })
     }
 
@@ -21,11 +24,18 @@ impl AOCCalculator for Day19 {
 
 impl Day19 {
     fn calculate_day_a(&self) -> usize {
-        0
+        self.blueprints
+            .iter()
+            .map(|blueprint| blueprint.calculate_quality_level())
+            .sum()
     }
 
     fn calculate_day_b(&self) -> usize {
-        0
+        self.blueprints
+            .iter()
+            .take(3)
+            .map(|blueprint| blueprint.dayb_most_geodes())
+            .product()
     }
 }
 
@@ -37,7 +47,7 @@ mod tests {
     #[test]
     fn test_calculate_day_a() {
         let day19 = Day19::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 33;
         let actual = day19.calculate_day_a();
         assert_eq!(expected, actual);
     }
@@ -45,7 +55,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day19 = Day19::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 3472;
         let actual = day19.calculate_day_b();
         assert_eq!(expected, actual);
     }
@@ -53,8 +63,9 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_a() {
         let day19 = Day19::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 988;
         let actual = day19.calculate_day_a();
+        assert_ne!(actual, 865);
         assert_eq!(expected, actual);
     }
 
