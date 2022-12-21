@@ -31,15 +31,6 @@ impl RobotType {
             RobotType::Geode => 3,
         }
     }
-
-    fn get_as_decision(&self) -> Decision {
-        match self {
-            RobotType::Ore => Decision::Ore,
-            RobotType::Clay => Decision::Clay,
-            RobotType::Obsidian => Decision::Obsidian,
-            RobotType::Geode => Decision::Geode,
-        }
-    }
 }
 
 impl Blueprint {
