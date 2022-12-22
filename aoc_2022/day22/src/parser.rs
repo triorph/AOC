@@ -52,5 +52,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day22_parser::parse(&input_str).expect("Should parse successfully");
+        assert_eq!(actual.1.len(), 13)
     }
 }

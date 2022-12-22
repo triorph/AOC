@@ -195,13 +195,169 @@ impl Position {
         }
     }
 
-    pub fn run_instruction_day_a(&mut self, map: &Map, instruction: &Instruction) {
+    fn move_forward_one_day_b(&mut self, map: &Map) {
+        let (next_point, next_direction) = self.get_next_point_day_b();
+        let map_value = map.get_at_point(&next_point);
+        if map_value.is_wrap() {
+            // sanity check
+            panic!(
+                "next_point {:?} wrapped incorrectly from {:?} {:?}",
+                next_point, self.coord, self.direction
+            );
+        }
+        if map_value.is_floor() {
+            self.coord = next_point;
+            self.direction = next_direction;
+        }
+    }
+
+    fn get_next_point_day_b(&mut self) -> (Point, Direction) {
+        match (self.coord, self.direction) {
+            (coord, Direction::Up) if coord.is_edge_a() => {
+                let delta = coord.x - 50;
+                (
+                    Point {
+                        x: 0,
+                        y: 150 + delta,
+                    },
+                    Direction::Right,
+                )
+            }
+            (coord, Direction::Up) if coord.is_edge_b() => {
+                let delta = coord.x - 100;
+                // Pretty sure we don't flip x here
+                (Point { x: delta, y: 199 }, Direction::Up)
+            }
+            (coord, Direction::Right) if coord.is_edge_c() => {
+                let delta = coord.y;
+                (
+                    Point {
+                        x: 99,
+                        y: 149 - delta,
+                    },
+                    Direction::Left,
+                )
+            }
+            (coord, Direction::Left) if coord.is_edge_d() => {
+                let delta = coord.y;
+                (
+                    Point {
+                        x: 0,
+                        y: 149 - delta,
+                    },
+                    Direction::Right,
+                )
+            }
+            (coord, Direction::Left) if coord.is_edge_e() => {
+                let delta = coord.y - 50;
+                (Point { x: delta, y: 100 }, Direction::Down)
+            }
+            (coord, Direction::Right) if coord.is_edge_f() => {
+                let delta = coord.y - 50;
+                (
+                    Point {
+                        x: 100 + delta,
+                        y: 49,
+                    },
+                    Direction::Up,
+                )
+            }
+            (coord, Direction::Up) if coord.is_edge_g() => {
+                let delta = coord.x;
+                (
+                    Point {
+                        x: 50,
+                        y: 50 + delta,
+                    },
+                    Direction::Right,
+                )
+            }
+            (coord, Direction::Left) if coord.is_edge_h() => {
+                let delta = coord.y - 100;
+                (
+                    Point {
+                        x: 50,
+                        y: 49 - delta,
+                    },
+                    Direction::Right,
+                )
+            }
+            (coord, Direction::Right) if coord.is_edge_i() => {
+                let delta = coord.y - 100;
+                (
+                    Point {
+                        x: 149,
+                        y: 49 - delta,
+                    },
+                    Direction::Left,
+                )
+            }
+            (coord, Direction::Down) if coord.is_edge_j() => {
+                let delta = coord.x - 50;
+                (
+                    Point {
+                        x: 49,
+                        y: 150 + delta,
+                    },
+                    Direction::Left,
+                )
+            }
+            (coord, Direction::Left) if coord.is_edge_k() => {
+                let delta = coord.y - 150;
+                (
+                    Point {
+                        x: 50 + delta,
+                        y: 0,
+                    },
+                    Direction::Down,
+                )
+            }
+            (coord, Direction::Right) if coord.is_edge_l() => {
+                let delta = coord.y - 150;
+                (
+                    Point {
+                        x: 50 + delta,
+                        y: 149,
+                    },
+                    Direction::Up,
+                )
+            }
+            (coord, Direction::Down) if coord.is_edge_m() => {
+                let delta = coord.x;
+                // Pretty sure we don't flip this
+                (
+                    Point {
+                        x: 100 + delta,
+                        y: 0,
+                    },
+                    Direction::Down,
+                )
+            }
+            (coord, Direction::Down) if coord.is_edge_n() => {
+                let delta = coord.x - 100;
+                (
+                    Point {
+                        x: 99,
+                        y: 50 + delta,
+                    },
+                    Direction::Left,
+                )
+            }
+            (coord, direction) => (&coord + &direction.as_coordinate(), direction),
+        }
+    }
+
+    pub fn run_instruction(&mut self, map: &Map, instruction: &Instruction, is_day_b: bool) {
         match instruction {
             Instruction::RotateLeft => self.direction = self.direction.rotate_left(),
             Instruction::RotateRight => self.direction = self.direction.rotate_right(),
             Instruction::MoveForward(n) => {
                 for _ in 0..*n {
-                    self.move_forward_one_day_a(map)
+                    if is_day_b {
+                        self.move_forward_one_day_b(map)
+                    } else {
+                        self.move_forward_one_day_a(map)
+                    }
                 }
             }
         }
@@ -210,6 +366,64 @@ impl Position {
     pub fn get_password(&self) -> usize {
         ((1000 * (self.coord.y + 1) + 4 * (self.coord.x + 1)) as usize)
             + self.direction.get_password()
+    }
+}
+
+impl Point {
+    fn is_edge_a(&self) -> bool {
+        (50..=99).contains(&self.x) && self.y == 0
+    }
+
+    fn is_edge_b(&self) -> bool {
+        (100..=149).contains(&self.x) && self.y == 0
+    }
+
+    fn is_edge_c(&self) -> bool {
+        self.x == 149 && (0..=49).contains(&self.y)
+    }
+
+    fn is_edge_d(&self) -> bool {
+        self.x == 50 && (0..=49).contains(&self.y)
+    }
+
+    fn is_edge_e(&self) -> bool {
+        self.x == 50 && (50..=99).contains(&self.y)
+    }
+
+    fn is_edge_f(&self) -> bool {
+        self.x == 99 && (50..=99).contains(&self.y)
+    }
+
+    fn is_edge_g(&self) -> bool {
+        (0..=49).contains(&self.x) && self.y == 100
+    }
+
+    fn is_edge_h(&self) -> bool {
+        self.x == 0 && (100..=149).contains(&self.y)
+    }
+
+    fn is_edge_i(&self) -> bool {
+        self.x == 99 && (100..=149).contains(&self.y)
+    }
+
+    fn is_edge_j(&self) -> bool {
+        (50..=149).contains(&self.x) && self.y == 149
+    }
+
+    fn is_edge_k(&self) -> bool {
+        self.x == 0 && (150..=199).contains(&self.y)
+    }
+
+    fn is_edge_l(&self) -> bool {
+        self.x == 49 && (150..=199).contains(&self.y)
+    }
+
+    fn is_edge_m(&self) -> bool {
+        (0..=49).contains(&self.x) && self.y == 199
+    }
+
+    fn is_edge_n(&self) -> bool {
+        (100..=149).contains(&self.x) && self.y == 49
     }
 }
 
