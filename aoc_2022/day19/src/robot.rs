@@ -13,15 +13,6 @@ pub enum RobotType {
     Geode,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-enum Decision {
-    DoNothing,
-    Ore,
-    Clay,
-    Obsidian,
-    Geode,
-}
-
 impl RobotType {
     fn get_as_index(&self) -> usize {
         match self {
@@ -62,94 +53,69 @@ impl Blueprint {
         robot_count: &[usize; 4],
         resource_count: &[usize; 4],
         time_left: usize,
-    ) -> Vec<Decision> {
+    ) -> Vec<RobotType> {
         let mut ret = Vec::new();
-        if self.can_afford(resource_count, &RobotType::Geode) {
-            ret.push(Decision::Geode);
-        } else {
-            if robot_count[2] < self.max_reqs[2]
-                && resource_count[2] < self.max_reqs[2] * time_left
-                && self.can_afford(resource_count, &RobotType::Obsidian)
-            {
-                ret.push(Decision::Obsidian);
-            }
-            if robot_count[0] < self.max_reqs[0]
-                && resource_count[0] < self.max_reqs[0] * time_left
-                && self.max_reqs[0] < time_left
-                && self.can_afford(resource_count, &RobotType::Ore)
-            {
-                ret.push(Decision::Ore);
-            }
-            if robot_count[1] < self.max_reqs[1]
-                && resource_count[1] < self.max_reqs[1] * time_left
-                && self.can_afford(resource_count, &RobotType::Clay)
-            {
-                ret.push(Decision::Clay);
-            }
+        if robot_count[2] > 0 {
+            ret.push(RobotType::Geode);
         }
-
-        if !ret.contains(&Decision::Geode)
-            && !ret.contains(&Decision::Obsidian)
-            && (robot_count[0] < self.max_reqs[0] && !ret.contains(&Decision::Ore)
-                || robot_count[1] < self.max_reqs[1] && !ret.contains(&Decision::Clay)
-                || robot_count[2] < self.max_reqs[2] && robot_count[1] > 0)
+        if robot_count[2] < self.max_reqs[2]
+            && resource_count[2] < self.max_reqs[2] * time_left
+            && robot_count[1] > 0
         {
-            ret.push(Decision::DoNothing);
+            ret.push(RobotType::Obsidian);
+        }
+        if robot_count[0] < self.max_reqs[0]
+            && resource_count[0] < self.max_reqs[0] * time_left
+            && self.max_reqs[0] < time_left
+        {
+            ret.push(RobotType::Ore);
+        }
+        if robot_count[1] < self.max_reqs[1] && resource_count[1] < self.max_reqs[1] * time_left {
+            ret.push(RobotType::Clay);
         }
         ret
     }
 
     fn make_decision(
         &self,
-        robot_count: &[usize; 4],
-        resource_count: &[usize; 4],
-        decision: &Decision,
-    ) -> ([usize; 4], [usize; 4]) {
-        let mut robot_count = robot_count.clone();
-        let mut resource_count = resource_count.clone();
-        match decision {
-            Decision::DoNothing => (),
-            Decision::Ore => {
-                for (i, resource) in self.costs[0].iter().enumerate() {
+        robot_count: &mut [usize; 4],
+        resource_count: &mut [usize; 4],
+        decision: &RobotType,
+    ) -> usize {
+        let mut time_taken = 1;
+        loop {
+            if self.can_afford(resource_count, decision) {
+                for (i, resource) in self.costs[decision.get_as_index()].iter().enumerate() {
                     resource_count[i] -= resource;
                 }
-            }
-            Decision::Clay => {
-                for (i, resource) in self.costs[1].iter().enumerate() {
-                    resource_count[i] -= resource;
+                break;
+            } else {
+                for i in 0..robot_count.len() {
+                    resource_count[i] += robot_count[i];
                 }
-            }
-            Decision::Obsidian => {
-                for (i, resource) in self.costs[2].iter().enumerate() {
-                    resource_count[i] -= resource;
-                }
-            }
-            Decision::Geode => {
-                for (i, resource) in self.costs[3].iter().enumerate() {
-                    resource_count[i] -= resource;
-                }
+                time_taken += 1;
             }
         }
         for i in 0..robot_count.len() {
             resource_count[i] += robot_count[i];
         }
         match decision {
-            Decision::DoNothing => (),
-            Decision::Ore => {
+            RobotType::Ore => {
                 robot_count[0] += 1;
             }
-            Decision::Clay => {
+            RobotType::Clay => {
                 robot_count[1] += 1;
             }
-            Decision::Obsidian => {
+            RobotType::Obsidian => {
                 robot_count[2] += 1;
             }
-            Decision::Geode => {
+            RobotType::Geode => {
                 robot_count[3] += 1;
             }
         }
-        (robot_count, resource_count)
+        time_taken
     }
+
     pub fn calculate_quality_level(&self) -> usize {
         let max = self.find_optimal_geode(24, &[1, 0, 0, 0], &[0, 0, 0, 0]);
         max * self.index
@@ -173,11 +139,14 @@ impl Blueprint {
             .decisions_available(robot_count, resource_count, time_left)
             .iter()
         {
-            let (robot_count, resource_count) =
-                self.make_decision(robot_count, resource_count, decision);
-            let this_route = self.find_optimal_geode(time_left - 1, &robot_count, &resource_count);
-
-            best_geodes = best_geodes.max(this_route);
+            let mut resource_count = *resource_count;
+            let mut robot_count = *robot_count;
+            let time_taken = self.make_decision(&mut robot_count, &mut resource_count, decision);
+            if time_taken <= time_left {
+                let this_route =
+                    self.find_optimal_geode(time_left - time_taken, &robot_count, &resource_count);
+                best_geodes = best_geodes.max(this_route);
+            }
         }
         best_geodes
     }

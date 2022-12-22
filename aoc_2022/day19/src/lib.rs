@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day19 = Day19::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 8580;
         let actual = day19.calculate_day_b();
         assert_eq!(expected, actual);
     }
