@@ -16,11 +16,7 @@ impl AOCCalculator for Day25 {
     }
 
     fn print_results(&self, name: &str) {
-        println!(
-            "{}a answer is {:?}",
-            name,
-            self.calculate_day_a().to_string()
-        );
+        println!("{}a answer is {}", name, self.calculate_day_a().to_string());
     }
 }
 
