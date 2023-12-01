@@ -3,15 +3,13 @@ use crate::parser::{parse_data_a, parse_data_b};
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
 pub struct Day1 {
-    lines_a: Vec<Vec<usize>>,
-    lines_b: Vec<Vec<usize>>,
+    input_data: String,
 }
 
 impl AOCCalculator for Day1 {
     fn new(filename: &str) -> Result<Day1, AOCFileOrParseError> {
         Ok(Day1 {
-            lines_a: parse_data_a(&read_input_file(filename)?)?,
-            lines_b: parse_data_b(&read_input_file(filename)?)?,
+            input_data: read_input_file(filename)?,
         })
     }
 
@@ -23,17 +21,23 @@ impl AOCCalculator for Day1 {
 
 impl Day1 {
     fn calculate_day_a(&self) -> usize {
-        self.lines_a
-            .iter()
-            .map(|line| line[0] * 10 + line[line.len() - 1])
-            .sum()
+        parse_data_a(&self.input_data)
+            .map(|x| {
+                x.iter()
+                    .map(|line| line[0] * 10 + line[line.len() - 1])
+                    .sum()
+            })
+            .unwrap_or(0)
     }
 
     fn calculate_day_b(&self) -> usize {
-        self.lines_b
-            .iter()
-            .map(|line| line[0] * 10 + line[line.len() - 1])
-            .sum()
+        parse_data_b(&self.input_data)
+            .map(|x| {
+                x.iter()
+                    .map(|line| line[0] * 10 + line[line.len() - 1])
+                    .sum()
+            })
+            .unwrap_or(0)
     }
 }
 
