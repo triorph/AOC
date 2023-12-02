@@ -11,7 +11,7 @@ use day1::Day1;
 // use day17::Day17;
 // use day18::Day18;
 // use day19::Day19;
-// use day2::Day2;
+use day2::Day2;
 // use day20::Day20;
 // use day21::Day21;
 // use day22::Day22;
@@ -26,8 +26,9 @@ use day1::Day1;
 // use day8::Day8;
 // use day9::Day9;
 
-const ALL_CURRENT_DAYS: [&str; 1] = [
-    "day1", // "day2", "day3", "day4", "day5", "day6", "day7", "day8", "day9", "day10", "day11",
+const ALL_CURRENT_DAYS: [&str; 2] = [
+    "day1",
+    "day2", // "day3", "day4", "day5", "day6", "day7", "day8", "day9", "day10", "day11",
            // "day12", "day13", "day14", "day15", "day16", "day17", "day18", "day19", "day20", "day21",
            // "day22", "day23", "day24", "day25",
 ];
@@ -56,11 +57,11 @@ fn main() -> Result<()> {
         "day1",
         &allowed_days,
     );
-    // run_day_if_enabled(
-    //     Box::new(Day2::new("day2/data/input_data.txt")?),
-    //     "day2",
-    //     &allowed_days,
-    // );
+    run_day_if_enabled(
+        Box::new(Day2::new("day2/data/input_data.txt")?),
+        "day2",
+        &allowed_days,
+    );
     // run_day_if_enabled(
     //     Box::new(Day3::new("day3/data/input_data.txt")?),
     //     "day3",
