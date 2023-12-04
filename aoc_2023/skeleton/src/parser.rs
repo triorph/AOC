@@ -5,9 +5,7 @@ peg::parser! { pub grammar skeleton_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
     pub rule parse() -> Vec<usize>
-        = lines_of_numbers:number() ++ ("\n" +) "\n" * {
-             { lines_of_numbers }
-        }
+        = lines_of_numbers:number() ++ ("\n" +) "\n" * { lines_of_numbers }
 }}
 
 pub fn parse_data(input: &str) -> Result<(), AOCFileOrParseError> {
