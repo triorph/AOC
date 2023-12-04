@@ -36,40 +36,27 @@ impl Point {
         }
         ret
     }
-
-    fn get_neighbours(&self) -> HashSet<Point> {
-        let min_x = max(0, self.x as isize - 1) as usize;
-        let max_x = self.x + 1;
-        let min_y = max(0, self.y as isize - 1) as usize;
-        let max_y = self.y + 1;
-        let mut ret = HashSet::new();
-        for x in min_x..=max_x {
-            for y in min_y..=max_y {
-                if x != self.x || y != self.y {
-                    ret.insert(Point { x, y });
-                }
-            }
-        }
-        return ret;
-    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SchematicFullNumber {
     pub number: usize,
-    start: Point,
-    end: Point,
+    neighbours: HashSet<Point>,
 }
 
 impl SchematicFullNumber {
-    pub fn get_neighbours(&self) -> HashSet<Point> {
-        self.start.get_neighbours_to_other(&self.end)
+    fn new(number: usize, start: Point, end: Point) -> SchematicFullNumber {
+        SchematicFullNumber {
+            number,
+            neighbours: start.get_neighbours_to_other(&end),
+        }
+    }
+    pub fn get_neighbours(&self) -> &HashSet<Point> {
+        &self.neighbours
     }
 
     pub fn is_adjacent(&self, point: &Point) -> bool {
-        point.get_neighbours().iter().any(|n| {
-            n.x >= self.start.x && n.x <= self.end.x && n.y >= self.start.y && n.y <= self.end.y
-        })
+        self.neighbours.contains(point)
     }
 }
 
@@ -79,67 +66,91 @@ pub struct Schematic {
     pub gear_symbols: HashSet<Point>,
 }
 
+struct SchematicBuilder {
+    current_number: usize,
+    number_len: usize,
+    symbols: HashSet<Point>,
+    gear_symbols: HashSet<Point>,
+    numbers: Vec<SchematicFullNumber>,
+}
+
+impl SchematicBuilder {
+    fn new() -> SchematicBuilder {
+        SchematicBuilder {
+            current_number: 0,
+            number_len: 0,
+            symbols: HashSet::new(),
+            gear_symbols: HashSet::new(),
+            numbers: Vec::new(),
+        }
+    }
+
+    fn increase_number(&mut self, digit: usize) {
+        self.current_number *= 10;
+        self.current_number += digit;
+        self.number_len += 1;
+    }
+
+    fn insert_number_if_exists(&mut self, point: &Point) {
+        if self.number_len > 0 {
+            self.numbers.push(SchematicFullNumber::new(
+                self.current_number,
+                Point {
+                    x: point.x - self.number_len,
+                    y: point.y,
+                },
+                Point {
+                    x: point.x - 1,
+                    y: point.y,
+                },
+            ));
+            self.current_number = 0;
+            self.number_len = 0;
+        }
+    }
+
+    fn process(&mut self, point: Point, value: &SchematicValue) {
+        if let SchematicValue::Digit(digit) = value {
+            self.increase_number(*digit);
+        } else {
+            self.insert_number_if_exists(&point);
+            if &SchematicValue::Symbol == value {
+                self.symbols.insert(point.clone());
+            } else if &SchematicValue::GearSymbol == value {
+                self.symbols.insert(point.clone());
+                self.gear_symbols.insert(point.clone());
+            }
+        }
+    }
+
+    fn to_schematic(&self) -> Schematic {
+        Schematic {
+            numbers: self.numbers.clone(),
+            symbols: self.symbols.clone(),
+            gear_symbols: self.gear_symbols.clone(),
+        }
+    }
+}
+
 impl Schematic {
     pub fn new(input: Vec<Vec<SchematicValue>>) -> Schematic {
-        let mut current_number = 0;
-        let mut number_len = 0;
-        let mut symbols = HashSet::new();
-        let mut gear_symbols = HashSet::new();
-        let mut numbers = Vec::new();
-        for y in 0..input.len() {
-            for x in 0..input[y].len() {
-                if let SchematicValue::Digit(digit) = input[y][x] {
-                    current_number *= 10;
-                    current_number += digit;
-                    number_len += 1;
-                } else {
-                    if number_len > 0 {
-                        numbers.push(SchematicFullNumber {
-                            number: current_number,
-                            start: Point {
-                                x: x - number_len,
-                                y,
-                            },
-                            end: Point { x: x - 1, y },
-                        });
-                        current_number = 0;
-                        number_len = 0;
-                    }
-                    if SchematicValue::Symbol == input[y][x] {
-                        symbols.insert(Point { x, y });
-                    } else if SchematicValue::GearSymbol == input[y][x] {
-                        symbols.insert(Point { x, y });
-                        gear_symbols.insert(Point { x, y });
-                    }
-                }
+        let mut schematic_builder = SchematicBuilder::new();
+        for (y, line) in input.iter().enumerate() {
+            for (x, value) in line.iter().enumerate() {
+                schematic_builder.process(Point { x, y }, value);
             }
-            if number_len > 0 {
-                numbers.push(SchematicFullNumber {
-                    number: current_number,
-                    start: Point {
-                        x: input[y].len() - number_len,
-                        y,
-                    },
-                    end: Point {
-                        x: input[y].len() - 1,
-                        y,
-                    },
-                });
-                current_number = 0;
-                number_len = 0;
-            }
+            schematic_builder.insert_number_if_exists(&Point {
+                x: input[y].len(),
+                y,
+            });
         }
-        Schematic {
-            numbers,
-            symbols,
-            gear_symbols,
-        }
+        schematic_builder.to_schematic()
     }
 
     pub fn get_number_neighbours_to_point(&self, point: &Point) -> Vec<usize> {
         self.numbers
             .iter()
-            .filter(|number| number.is_adjacent(&point))
+            .filter(|number| number.is_adjacent(point))
             .map(|number| number.number)
             .collect()
     }
