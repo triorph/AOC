@@ -1,4 +1,5 @@
 extern crate peg;
+use crate::card::Card;
 use std::collections::HashSet;
 
 use aoc_helpers::AOCFileOrParseError;
@@ -6,17 +7,15 @@ use aoc_helpers::AOCFileOrParseError;
 peg::parser! { pub grammar day4_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    rule card() -> (HashSet<usize>, HashSet<usize>)
+    rule card() -> Card
         = "Card" " "* number() ":" " "* winners:number() ++ (" "+) " "* "|" " "* values:number() ++ (" "+) {
             (HashSet::from_iter(winners.into_iter()), HashSet::from_iter(values.into_iter()))
         }
-    pub rule parse() -> Vec< (HashSet<usize>, HashSet<usize>)>
+    pub rule parse() -> Vec<Card>
         = lines_of_cards:card() ++ ("\n" +) "\n" * { lines_of_cards }
 }}
 
-pub fn parse_data(
-    input: &str,
-) -> Result<Vec<(HashSet<usize>, HashSet<usize>)>, AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<Vec<Card>, AOCFileOrParseError> {
     if let Ok(ret) = day4_parser::parse(input) {
         Ok(ret)
     } else {

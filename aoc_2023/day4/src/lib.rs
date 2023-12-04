@@ -1,12 +1,13 @@
+mod card;
 mod parser;
 use std::cmp::min;
-use std::collections::HashSet;
 
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use card::{Card, CardTrait};
 
 pub struct Day4 {
-    cards: Vec<(HashSet<usize>, HashSet<usize>)>,
+    cards: Vec<Card>,
 }
 
 impl AOCCalculator for Day4 {
@@ -24,29 +25,16 @@ impl AOCCalculator for Day4 {
 
 impl Day4 {
     fn calculate_day_a(&self) -> usize {
-        self.cards
-            .iter()
-            .map(|(winners, candidates)| winners.intersection(candidates).count())
-            .map(|x| {
-                if x == 0 {
-                    0
-                } else {
-                    2_i32.pow(x as u32 - 1) as usize
-                }
-            })
-            .sum()
+        self.cards.iter().map(|card| card.score()).sum()
     }
 
     fn calculate_day_b(&self) -> usize {
         let mut card_quantities = vec![1; self.cards.len()];
         for i in (0..self.cards.len()).rev() {
-            let matches = self.cards[i].0.intersection(&self.cards[i].1).count();
-            println!("Card {:?} has matches {:?}", i, matches);
-            for j in (i + 1)..min(i + matches + 1, self.cards.len()) {
+            for j in (i + 1)..min(i + self.cards[i].matches() + 1, self.cards.len()) {
                 card_quantities[i] += card_quantities[j];
             }
         }
-        println!("{:?}", card_quantities);
         card_quantities.iter().sum()
     }
 }
