@@ -19,17 +19,17 @@ use day2::Day2;
 // use day24::Day24;
 // use day25::Day25;
 use day3::Day3;
-// use day4::Day4;
-// use day5::Day5;
+use day4::Day4;
+use day5::Day5;
 // use day6::Day6;
 // use day7::Day7;
 // use day8::Day8;
 // use day9::Day9;
 
-const ALL_CURRENT_DAYS: [&str; 3] = [
-    "day1", "day2",
-    "day3",
-    // "day4", "day5", "day6", "day7", "day8", "day9", "day10", "day11",
+const ALL_CURRENT_DAYS: [&str; 4] = [
+    "day1", "day2", "day3",
+    "day4",
+    // "day5", // "day6", "day7", "day8", "day9", "day10", "day11",
     // "day12", "day13", "day14", "day15", "day16", "day17", "day18", "day19", "day20", "day21",
     // "day22", "day23", "day24", "day25",
 ];
@@ -68,16 +68,16 @@ fn main() -> Result<()> {
         "day3",
         &allowed_days,
     );
-    // run_day_if_enabled(
-    //     Box::new(Day4::new("day4/data/input_data.txt")?),
-    //     "day4",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day5::new("day5/data/input_data.txt")?),
-    //     "day5",
-    //     &allowed_days,
-    // );
+    run_day_if_enabled(
+        Box::new(Day4::new("day4/data/input_data.txt")?),
+        "day4",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day5::new("day5/data/input_data.txt")?),
+        "day5",
+        &allowed_days,
+    );
     // run_day_if_enabled(
     //     Box::new(Day6::new("day6/data/input_data.txt")?),
     //     "day6",
