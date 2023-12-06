@@ -2,10 +2,11 @@ mod converter;
 mod parser;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use converter::{ConverterMap, Range, RangeTrait};
+use converter::ConverterMap;
+use std::ops::Range;
 
 pub struct Day5 {
-    seeds: Vec<u64>,
+    seeds: Vec<usize>,
     converter_maps: Vec<ConverterMap>,
 }
 
@@ -25,13 +26,13 @@ impl AOCCalculator for Day5 {
 }
 
 impl Day5 {
-    fn full_convert(&self, input: u64) -> u64 {
+    fn full_convert(&self, input: usize) -> usize {
         self.converter_maps
             .iter()
             .fold(input, |x, converter| converter.convert(x))
     }
 
-    fn full_convert_range(&self, input: Vec<Range>) -> Vec<Range> {
+    fn full_convert_range(&self, input: Vec<Range<usize>>) -> Vec<Range<usize>> {
         let ret = self
             .converter_maps
             .iter()
@@ -39,7 +40,7 @@ impl Day5 {
         ret
     }
 
-    fn calculate_day_a(&self) -> u64 {
+    fn calculate_day_a(&self) -> usize {
         self.seeds
             .iter()
             .map(|seed| self.full_convert(*seed))
@@ -47,16 +48,16 @@ impl Day5 {
             .unwrap_or(0)
     }
 
-    fn get_seeds_as_range(&self) -> Vec<Range> {
+    fn get_seeds_as_range(&self) -> Vec<Range<usize>> {
         (0..self.seeds.len() / 2)
-            .map(|i| (self.seeds[i * 2], self.seeds[i * 2] + self.seeds[i * 2 + 1]))
+            .map(|i| self.seeds[i * 2]..(self.seeds[i * 2] + self.seeds[i * 2 + 1]))
             .collect()
     }
 
-    fn calculate_day_b(&self) -> u64 {
+    fn calculate_day_b(&self) -> usize {
         self.full_convert_range(self.get_seeds_as_range())
             .iter()
-            .map(|range| range.0)
+            .map(|range| range.start)
             .min()
             .unwrap_or(0)
     }

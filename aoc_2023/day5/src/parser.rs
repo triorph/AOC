@@ -3,9 +3,9 @@ use crate::converter::{Converter, ConverterMap};
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day5_parser() for str {
-    rule number() -> u64
+    rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    rule seeds() -> Vec<u64>
+    rule seeds() -> Vec<usize>
         = "seeds:" " "* seeds:number() ++ (" "+) " "* { seeds }
     rule name() -> &'input str
         = name:$(['a'..='z'|'A'..='Z']+) { name }
@@ -15,15 +15,15 @@ peg::parser! { pub grammar day5_parser() for str {
     }
     rule converter_map() -> ConverterMap
         = input: name() "-to-" output:name() " map:\n" converters:converter() ++ ("\n" +) {
-            ConverterMap::new( input, output, converters )
+            ConverterMap::new( converters )
         }
-    pub rule parse() -> (Vec<u64>, Vec<ConverterMap>)
+    pub rule parse() -> (Vec<usize>, Vec<ConverterMap>)
         = seeds:seeds() "\n"+ converter_maps:converter_map() ++ ("\n"+) "\n" * {
             (seeds, converter_maps)
         }
 }}
 
-pub fn parse_data(input: &str) -> Result<(Vec<u64>, Vec<ConverterMap>), AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<(Vec<usize>, Vec<ConverterMap>), AOCFileOrParseError> {
     if let Ok(ret) = day5_parser::parse(input) {
         Ok(ret)
     } else {

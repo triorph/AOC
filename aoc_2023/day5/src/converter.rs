@@ -1,78 +1,63 @@
+use std::ops::Range;
+
 pub struct ConverterMap {
-    input_name: String,
-    output_name: String,
     converters: Vec<Converter>,
 }
 
 #[derive(Debug)]
 pub struct Converter {
-    input_range: Range,
-    output_start: u64,
+    input_range: Range<usize>,
+    output_start: usize,
 }
-
-pub type Range = (u64, u64);
 
 pub trait RangeTrait {
-    fn overlaps(&self, other: &Range) -> bool;
-    fn contains(&self, other: &u64) -> bool;
-    fn len(&self) -> u64;
-    fn as_range(&self) -> std::ops::Range<u64>;
+    fn overlaps(&self, other: &Self) -> bool;
 }
 
-impl RangeTrait for Range {
-    fn overlaps(&self, other: &Range) -> bool {
-        !(self.0 > other.1) && !(other.0 > self.1) && !(self.1 < other.0) && !(other.1 < self.0)
-    }
-
-    fn contains(&self, other: &u64) -> bool {
-        (self.0..self.1).contains(other)
-    }
-
-    fn len(&self) -> u64 {
-        self.1 - self.0
-    }
-
-    fn as_range(&self) -> std::ops::Range<u64> {
-        self.0..self.1
+impl RangeTrait for Range<usize> {
+    fn overlaps(&self, other: &Self) -> bool {
+        !(self.start > other.end || other.start > self.end)
+            && self.end >= other.start
+            && other.end >= self.start
     }
 }
 
 impl Converter {
-    pub fn new(output_start: u64, input_start: u64, range: u64) -> Converter {
+    pub fn new(output_start: usize, input_start: usize, range: usize) -> Converter {
         Converter {
-            input_range: (input_start, input_start + range),
+            input_range: input_start..input_start + range,
             output_start,
         }
     }
 
-    fn convert(&self, input: u64) -> Option<u64> {
+    fn convert(&self, input: usize) -> Option<usize> {
         if self.input_range.contains(&input) {
-            return Some(self.output_start + input - self.input_range.0);
+            return Some(self.output_start + input - self.input_range.start);
         }
         None
     }
 
-    fn convert_range(&self, other_range: Range) -> (Vec<Range>, Vec<Range>) {
+    fn convert_range(&self, other_range: Range<usize>) -> (Vec<Range<usize>>, Vec<Range<usize>>) {
         let mut changed = vec![];
         let mut unchanged = vec![];
         if self.input_range.overlaps(&other_range) {
-            let start = if self.input_range.contains(&other_range.0) {
-                self.output_start + other_range.0 - self.input_range.0
+            let start = if self.input_range.contains(&other_range.start) {
+                self.output_start + other_range.start - self.input_range.start
             } else {
-                if self.input_range.0 > other_range.0 {
-                    unchanged.push((other_range.0, self.input_range.0));
+                if self.input_range.start > other_range.start {
+                    unchanged.push(other_range.start..self.input_range.start);
                 }
                 self.output_start
             };
-            let end = if self.input_range.contains(&other_range.1) {
-                self.output_start + other_range.1 - self.input_range.0
+            let end = if self.input_range.contains(&other_range.end) {
+                self.output_start + other_range.end - self.input_range.start
             } else {
-                if other_range.1 > self.input_range.1 {
-                    unchanged.push((self.input_range.1, other_range.1));
+                if other_range.end > self.input_range.end {
+                    unchanged.push(self.input_range.end..other_range.end);
                 }
                 self.output_start + self.input_range.len()
             };
-            changed.push((start, end))
+            changed.push(start..end)
         } else {
             unchanged.push(other_range);
         }
@@ -81,15 +66,11 @@ impl Converter {
 }
 
 impl ConverterMap {
-    pub fn new(input: &str, output: &str, converters: Vec<Converter>) -> ConverterMap {
-        ConverterMap {
-            input_name: input.to_string(),
-            output_name: output.to_string(),
-            converters,
-        }
+    pub fn new(converters: Vec<Converter>) -> ConverterMap {
+        ConverterMap { converters }
     }
 
-    pub fn convert(&self, input: u64) -> u64 {
+    pub fn convert(&self, input: usize) -> usize {
         for converter in self.converters.iter() {
             if let Some(result) = converter.convert(input) {
                 return result;
@@ -98,13 +79,13 @@ impl ConverterMap {
         input
     }
 
-    pub fn convert_range(&self, range: &Range) -> Vec<Range> {
-        let mut unmapped: Vec<Range> = vec![range.clone()];
-        let mut results: Vec<Range> = vec![];
+    pub fn convert_range(&self, range: &Range<usize>) -> Vec<Range<usize>> {
+        let mut unmapped: Vec<Range<usize>> = vec![range.clone()];
+        let mut results: Vec<Range<usize>> = vec![];
         for converter in self.converters.iter() {
             let mut next_unmapped = vec![];
             for range in unmapped.iter() {
-                let (changed, unchanged) = converter.convert_range((range.0, range.1));
+                let (changed, unchanged) = converter.convert_range(range.clone());
                 results.extend(changed);
                 next_unmapped.extend(unchanged);
             }
@@ -114,7 +95,7 @@ impl ConverterMap {
         results
     }
 
-    pub fn convert_ranges(&self, input: &[Range]) -> Vec<Range> {
+    pub fn convert_ranges(&self, input: &[Range<usize>]) -> Vec<Range<usize>> {
         let mut ret = vec![];
         for range in input.iter() {
             let interim = self.convert_range(range);
@@ -132,33 +113,33 @@ mod tests {
 
     #[test]
     fn test_below() {
-        let converter_map = ConverterMap::new("a", "b", vec![Converter::new(70, 50, 10)]);
-        let actual = converter_map.convert_ranges(&[(45, 55)]);
-        let expected = vec![(70, 75), (45, 50)];
+        let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 10)]);
+        let actual = converter_map.convert_ranges(&[(45..55)]);
+        let expected = vec![(70..75), (45..50)];
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_above() {
-        let converter_map = ConverterMap::new("a", "b", vec![Converter::new(70, 50, 10)]);
-        let actual = converter_map.convert_ranges(&[(55, 65)]);
-        let expected = vec![(75, 80), (60, 65)];
+        let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 10)]);
+        let actual = converter_map.convert_ranges(&[(55..65)]);
+        let expected = vec![(75..80), (60..65)];
         assert_eq!(actual, expected)
     }
 
     #[test]
     fn test_within() {
-        let converter_map = ConverterMap::new("a", "b", vec![Converter::new(70, 50, 15)]);
-        let actual = converter_map.convert_ranges(&[(55, 60)]);
-        let expected = vec![(75, 80)];
+        let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 15)]);
+        let actual = converter_map.convert_ranges(&[(55..60)]);
+        let expected = vec![(75..80)];
         assert_eq!(actual, expected)
     }
 
     #[test]
     fn test_around() {
-        let converter_map = ConverterMap::new("a", "b", vec![Converter::new(70, 50, 5)]);
-        let actual = converter_map.convert_ranges(&[(45, 60)]);
-        let expected = vec![(70, 75), (45, 50), (55, 60)];
+        let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 5)]);
+        let actual = converter_map.convert_ranges(&[(45..60)]);
+        let expected = vec![(70..75), (45..50), (55..60)];
         assert_eq!(actual, expected)
     }
 }
