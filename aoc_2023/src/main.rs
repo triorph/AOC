@@ -26,12 +26,11 @@ use day5::Day5;
 // use day8::Day8;
 // use day9::Day9;
 
-const ALL_CURRENT_DAYS: [&str; 4] = [
-    "day1", "day2", "day3",
-    "day4",
-    // "day5", // "day6", "day7", "day8", "day9", "day10", "day11",
-    // "day12", "day13", "day14", "day15", "day16", "day17", "day18", "day19", "day20", "day21",
-    // "day22", "day23", "day24", "day25",
+const ALL_CURRENT_DAYS: [&str; 5] = [
+    "day1", "day2", "day3", "day4",
+    "day5", // "day6", "day7", "day8", "day9", "day10", "day11",
+           // "day12", "day13", "day14", "day15", "day16", "day17", "day18", "day19", "day20", "day21",
+           // "day22", "day23", "day24", "day25",
 ];
 
 fn run_day_if_enabled(day: Box<dyn AOCCalculator>, name: &str, allowed_days: &[String]) {
