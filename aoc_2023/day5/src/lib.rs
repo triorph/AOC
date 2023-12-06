@@ -49,8 +49,9 @@ impl Day5 {
     }
 
     fn get_seeds_as_range(&self) -> Vec<Range<usize>> {
-        (0..self.seeds.len() / 2)
-            .map(|i| self.seeds[i * 2]..(self.seeds[i * 2] + self.seeds[i * 2 + 1]))
+        self.seeds[..]
+            .chunks(2)
+            .map(|chunk| chunk[0]..(chunk[0] + chunk[1]))
             .collect()
     }
 

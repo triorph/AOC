@@ -10,11 +10,11 @@ peg::parser! { pub grammar day5_parser() for str {
     rule name() -> &'input str
         = name:$(['a'..='z'|'A'..='Z']+) { name }
     rule converter() -> Converter
-        = input_start:number() " "+  output_start:number() " "+ range:number() {
-            Converter::new(input_start, output_start, range)
+        = output_start:number() " "+  input_start:number() " "+ range:number() {
+            Converter::new(output_start, input_start, range)
     }
     rule converter_map() -> ConverterMap
-        = input: name() "-to-" output:name() " map:\n" converters:converter() ++ ("\n" +) {
+        = name() "-to-" name() " map:\n" converters:converter() ++ ("\n" +) {
             ConverterMap::new( converters )
         }
     pub rule parse() -> (Vec<usize>, Vec<ConverterMap>)

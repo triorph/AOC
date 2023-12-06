@@ -10,11 +10,11 @@ pub struct Converter {
     output_start: usize,
 }
 
-pub trait RangeTrait {
+trait Overlaps {
     fn overlaps(&self, other: &Self) -> bool;
 }
 
-impl RangeTrait for Range<usize> {
+impl Overlaps for Range<usize> {
     fn overlaps(&self, other: &Self) -> bool {
         !(self.start > other.end || other.start > self.end)
             && self.end >= other.start
@@ -37,31 +37,42 @@ impl Converter {
         None
     }
 
+    fn output_end(&self) -> usize {
+        self.output_start + self.input_range.len()
+    }
+
     fn convert_range(&self, other_range: Range<usize>) -> (Vec<Range<usize>>, Vec<Range<usize>>) {
         let mut changed = vec![];
         let mut unchanged = vec![];
         if self.input_range.overlaps(&other_range) {
-            let start = if self.input_range.contains(&other_range.start) {
-                self.output_start + other_range.start - self.input_range.start
-            } else {
-                if self.input_range.start > other_range.start {
-                    unchanged.push(other_range.start..self.input_range.start);
-                }
+            let start = self.convert(other_range.start).unwrap_or_else(|| {
+                unchanged.push(other_range.start..self.input_range.start);
                 self.output_start
-            };
-            let end = if self.input_range.contains(&other_range.end) {
-                self.output_start + other_range.end - self.input_range.start
-            } else {
-                if other_range.end > self.input_range.end {
-                    unchanged.push(self.input_range.end..other_range.end);
-                }
-                self.output_start + self.input_range.len()
-            };
+            });
+            let end = self.convert(other_range.end).unwrap_or_else(|| {
+                unchanged.push(self.input_range.end..other_range.end);
+                self.output_end()
+            });
             changed.push(start..end)
         } else {
             unchanged.push(other_range);
         }
         (changed, unchanged)
+    }
+
+    fn convert_ranges(&self, ranges: &[Range<usize>]) -> (Vec<Range<usize>>, Vec<Range<usize>>) {
+        ranges
+            .iter()
+            .map(|range| self.convert_range(range.clone()))
+            .fold(
+                (Vec::new(), Vec::new()),
+                |(changed, unchanged), (new_changed, new_unchanged)| {
+                    (
+                        [changed, new_changed].concat(),
+                        [unchanged, new_unchanged].concat(),
+                    )
+                },
+            )
     }
 }
 
@@ -71,37 +82,32 @@ impl ConverterMap {
     }
 
     pub fn convert(&self, input: usize) -> usize {
-        for converter in self.converters.iter() {
-            if let Some(result) = converter.convert(input) {
-                return result;
-            }
-        }
-        input
+        self.converters
+            .iter()
+            .map(|converter| converter.convert(input))
+            .filter(|result| result.is_some())
+            .map(|result| result.unwrap())
+            .next()
+            .unwrap_or(input)
     }
 
     pub fn convert_range(&self, range: &Range<usize>) -> Vec<Range<usize>> {
-        let mut unmapped: Vec<Range<usize>> = vec![range.clone()];
-        let mut results: Vec<Range<usize>> = vec![];
-        for converter in self.converters.iter() {
-            let mut next_unmapped = vec![];
-            for range in unmapped.iter() {
-                let (changed, unchanged) = converter.convert_range(range.clone());
-                results.extend(changed);
-                next_unmapped.extend(unchanged);
-            }
-            unmapped = next_unmapped
-        }
-        results.extend(unmapped);
-        results
+        let (results, unchanged) = self.converters.iter().fold(
+            (vec![range.clone()], Vec::new()),
+            |(to_convert, results), converter| {
+                let (changed, unchanged) = converter.convert_ranges(&to_convert);
+                (unchanged, [results, changed].concat())
+            },
+        );
+        [unchanged, results].concat()
     }
 
     pub fn convert_ranges(&self, input: &[Range<usize>]) -> Vec<Range<usize>> {
-        let mut ret = vec![];
-        for range in input.iter() {
-            let interim = self.convert_range(range);
-            ret.extend(interim);
-        }
-        ret
+        input
+            .iter()
+            .map(|range| self.convert_range(range))
+            .flatten()
+            .collect()
     }
 }
 
