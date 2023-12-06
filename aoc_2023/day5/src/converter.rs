@@ -12,10 +12,11 @@ pub struct Converter {
 
 pub type Range = (u64, u64);
 
-trait RangeTrait {
+pub trait RangeTrait {
     fn overlaps(&self, other: &Range) -> bool;
     fn contains(&self, other: &u64) -> bool;
     fn len(&self) -> u64;
+    fn as_range(&self) -> std::ops::Range<u64>;
 }
 
 impl RangeTrait for Range {
@@ -29,6 +30,10 @@ impl RangeTrait for Range {
 
     fn len(&self) -> u64 {
         self.1 - self.0
+    }
+
+    fn as_range(&self) -> std::ops::Range<u64> {
+        self.0..self.1
     }
 }
 

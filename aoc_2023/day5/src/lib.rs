@@ -2,7 +2,7 @@ mod converter;
 mod parser;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use converter::{ConverterMap, Range};
+use converter::{ConverterMap, Range, RangeTrait};
 
 pub struct Day5 {
     seeds: Vec<u64>,
@@ -51,10 +51,6 @@ impl Day5 {
         (0..self.seeds.len() / 2)
             .map(|i| (self.seeds[i * 2], self.seeds[i * 2] + self.seeds[i * 2 + 1]))
             .collect()
-        // return vec![
-        //     (self.seeds[0], self.seeds[0] + self.seeds[1]),
-        //     (self.seeds[2], self.seeds[2] + self.seeds[3]),
-        // ];
     }
 
     fn calculate_day_b(&self) -> u64 {
@@ -98,7 +94,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day5 = Day5::new("data/input_data.txt").unwrap();
-        let expected = 58880743;
+        let expected = 1493866;
         let actual = day5.calculate_day_b();
         assert_eq!(expected, actual);
     }
