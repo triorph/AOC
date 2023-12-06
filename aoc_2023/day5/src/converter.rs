@@ -100,10 +100,6 @@ impl ConverterMap {
             let mut next_unmapped = vec![];
             for range in unmapped.iter() {
                 let (changed, unchanged) = converter.convert_range((range.0, range.1));
-                // println!(
-                //     "Converter {:?} converted {:?} to {:?} and left {:?}",
-                //     converter, range, changed, unchanged
-                // );
                 results.extend(changed);
                 next_unmapped.extend(unchanged);
             }
@@ -114,19 +110,11 @@ impl ConverterMap {
     }
 
     pub fn convert_ranges(&self, input: &[Range]) -> Vec<Range> {
-        println!(
-            "\n\nConverter {:?}, ranges initial input: {:?}\n\n",
-            (&self.input_name, &self.output_name),
-            input
-        );
         let mut ret = vec![];
         for range in input.iter() {
-            // println!("\n input range: {:?}\n", range);
             let interim = self.convert_range(range);
-            // println!("\n was converted to: {:?}\n", interim);
             ret.extend(interim);
         }
-        println!("\n\nConverter ranges final result: {:?}\n\n", ret);
         ret
     }
 }

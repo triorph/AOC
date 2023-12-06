@@ -21,7 +21,7 @@ use day2::Day2;
 use day3::Day3;
 use day4::Day4;
 use day5::Day5;
-// use day6::Day6;
+use day6::Day6;
 // use day7::Day7;
 // use day8::Day8;
 // use day9::Day9;
@@ -77,11 +77,11 @@ fn main() -> Result<()> {
         "day5",
         &allowed_days,
     );
-    // run_day_if_enabled(
-    //     Box::new(Day6::new("day6/data/input_data.txt")?),
-    //     "day6",
-    //     &allowed_days,
-    // );
+    run_day_if_enabled(
+        Box::new(Day6::new("day6/data/input_data.txt")?),
+        "day6",
+        &allowed_days,
+    );
     // run_day_if_enabled(
     //     Box::new(Day7::new("day7/data/input_data.txt")?),
     //     "day7",

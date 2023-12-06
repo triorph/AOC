@@ -36,7 +36,6 @@ impl Day5 {
             .converter_maps
             .iter()
             .fold(input, |x, converter| converter.convert_ranges(&x));
-        println!("Final ranges, {:?}", ret);
         ret
     }
 
