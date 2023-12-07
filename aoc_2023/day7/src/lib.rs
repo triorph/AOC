@@ -1,15 +1,17 @@
 mod parser;
+mod poker_hand;
 use crate::parser::parse_data;
+use crate::poker_hand::PokerHand;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
 pub struct Day6 {
-    data: (),
+    bets: Vec<(PokerHand, usize)>,
 }
 
 impl AOCCalculator for Day6 {
     fn new(filename: &str) -> Result<Day6, AOCFileOrParseError> {
         Ok(Day6 {
-            data: parse_data(&read_input_file(filename)?)?,
+            bets: parse_data(&read_input_file(filename)?)?,
         })
     }
 
@@ -21,11 +23,23 @@ impl AOCCalculator for Day6 {
 
 impl Day6 {
     fn calculate_day_a(&self) -> usize {
-        0
+        let mut bets = self.bets.clone();
+        bets.sort_by(|first, second| first.0.compare_hand_day_a(&second.0));
+        return bets
+            .iter()
+            .enumerate()
+            .map(|(index, (_, bet))| (index + 1) * bet)
+            .sum();
     }
 
     fn calculate_day_b(&self) -> usize {
-        0
+        let mut bets = self.bets.clone();
+        bets.sort_by(|first, second| first.0.compare_hand_day_b(&second.0));
+        return bets
+            .iter()
+            .enumerate()
+            .map(|(index, (_, bet))| (index + 1) * bet)
+            .sum();
     }
 }
 
@@ -37,7 +51,7 @@ mod tests {
     #[test]
     fn test_calculate_day_a() {
         let day6 = Day6::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 6440;
         let actual = day6.calculate_day_a();
         assert_eq!(expected, actual);
     }
@@ -45,7 +59,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day6 = Day6::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 5905;
         let actual = day6.calculate_day_b();
         assert_eq!(expected, actual);
     }
@@ -53,7 +67,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_a() {
         let day6 = Day6::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 255048101;
         let actual = day6.calculate_day_a();
         assert_eq!(expected, actual);
     }
