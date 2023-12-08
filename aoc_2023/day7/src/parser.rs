@@ -2,7 +2,7 @@ extern crate peg;
 use crate::poker_hand::{PokerCard, PokerHand};
 use aoc_helpers::AOCFileOrParseError;
 
-peg::parser! { pub grammar day6_parser() for str {
+peg::parser! { pub grammar day7_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
     rule poker_card_ace() -> PokerCard
@@ -52,7 +52,7 @@ peg::parser! { pub grammar day6_parser() for str {
 }}
 
 pub fn parse_data(input: &str) -> Result<Vec<(PokerHand, usize)>, AOCFileOrParseError> {
-    if let Ok(ret) = day6_parser::parse(input) {
+    if let Ok(ret) = day7_parser::parse(input) {
         Ok(ret)
     } else {
         Err(AOCFileOrParseError)
@@ -70,7 +70,7 @@ mod test {
     #[test]
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
-        let actual = day6_parser::parse(&input_str).expect("Should parse successfully");
+        let actual = day7_parser::parse(&input_str).expect("Should parse successfully");
         let expected: Vec<(PokerHand, usize)> = vec![
             (
                 PokerHand::raw(

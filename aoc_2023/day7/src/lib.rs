@@ -4,13 +4,13 @@ use crate::parser::parse_data;
 use crate::poker_hand::PokerHand;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
-pub struct Day6 {
+pub struct Day7 {
     bets: Vec<(PokerHand, usize)>,
 }
 
-impl AOCCalculator for Day6 {
-    fn new(filename: &str) -> Result<Day6, AOCFileOrParseError> {
-        Ok(Day6 {
+impl AOCCalculator for Day7 {
+    fn new(filename: &str) -> Result<Day7, AOCFileOrParseError> {
+        Ok(Day7 {
             bets: parse_data(&read_input_file(filename)?)?,
         })
     }
@@ -21,10 +21,10 @@ impl AOCCalculator for Day6 {
     }
 }
 
-impl Day6 {
+impl Day7 {
     fn calculate_day_a(&self) -> usize {
         let mut bets = self.bets.clone();
-        bets.sort_by(|first, second| first.0.compare_hand_day_a(&second.0));
+        bets.sort_by(|first, second| first.0.compare_day_a(&second.0));
         return bets
             .iter()
             .enumerate()
@@ -34,7 +34,7 @@ impl Day6 {
 
     fn calculate_day_b(&self) -> usize {
         let mut bets = self.bets.clone();
-        bets.sort_by(|first, second| first.0.compare_hand_day_b(&second.0));
+        bets.sort_by(|first, second| first.0.compare_day_b(&second.0));
         return bets
             .iter()
             .enumerate()
@@ -50,33 +50,33 @@ mod tests {
 
     #[test]
     fn test_calculate_day_a() {
-        let day6 = Day6::new("data/test_data.txt").unwrap();
+        let day7 = Day7::new("data/test_data.txt").unwrap();
         let expected = 6440;
-        let actual = day6.calculate_day_a();
+        let actual = day7.calculate_day_a();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_calculate_day_b() {
-        let day6 = Day6::new("data/test_data.txt").unwrap();
+        let day7 = Day7::new("data/test_data.txt").unwrap();
         let expected = 5905;
-        let actual = day6.calculate_day_b();
+        let actual = day7.calculate_day_b();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_real_input_calculate_day_a() {
-        let day6 = Day6::new("data/input_data.txt").unwrap();
+        let day7 = Day7::new("data/input_data.txt").unwrap();
         let expected = 255048101;
-        let actual = day6.calculate_day_a();
+        let actual = day7.calculate_day_a();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_real_input_calculate_day_b() {
-        let day6 = Day6::new("data/input_data.txt").unwrap();
-        let expected = 0;
-        let actual = day6.calculate_day_b();
+        let day7 = Day7::new("data/input_data.txt").unwrap();
+        let expected = 253718286;
+        let actual = day7.calculate_day_b();
         assert_eq!(expected, actual);
     }
 }
