@@ -12,7 +12,7 @@ pub enum Pipe {
 }
 
 impl Pipe {
-    pub fn invalid_when_tripled(&self) -> Vec<Point> {
+    pub fn all_places_when_tiled(&self) -> Vec<Point> {
         match self {
             Pipe::Empty => vec![],
             _ => [self.neighbours(), vec![Point { x: 0, y: 0 }]]

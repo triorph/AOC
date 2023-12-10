@@ -11,6 +11,10 @@ impl Point {
     pub fn neighbours(&self, pipe: &Pipe) -> Vec<Point> {
         pipe.neighbours().into_iter().map(|x| x + *self).collect()
     }
+
+    pub fn all_neighbours(&self) -> Vec<Point> {
+        self.neighbours(&Pipe::Start)
+    }
 }
 
 impl Add for Point {
