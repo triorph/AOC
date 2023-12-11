@@ -1,5 +1,7 @@
+use aoc_helpers::point2d::Point2D;
 use std::cmp::{max, min};
 use std::collections::HashSet;
+use std::hash::Hash;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchematicValue {
@@ -9,30 +11,31 @@ pub enum SchematicValue {
     Digit(usize),
 }
 
-#[derive(Debug, Hash, Clone, PartialEq, Eq)]
-pub struct Point {
-    x: usize,
-    y: usize,
+trait Neighbours
+where
+    Self: Hash + Sized,
+{
+    fn get_neighbours_to_other(&self, other: &Self) -> HashSet<Self>;
 }
 
-impl Point {
-    fn get_neighbours_to_other(&self, other: &Point) -> HashSet<Point> {
-        let min_x = max(0, min(self.x as isize, other.x as isize) - 1) as usize;
-        let min_y = max(0, min(self.y as isize, other.y as isize) - 1) as usize;
+impl Neighbours for Point2D {
+    fn get_neighbours_to_other(&self, other: &Point2D) -> HashSet<Point2D> {
+        let min_x = max(0, min(self.x, other.x) - 1);
+        let min_y = max(0, min(self.y, other.y) - 1);
         let max_x = max(self.x, other.x) + 1;
         let max_y = max(self.y, other.y) + 1;
         let mut ret = HashSet::new();
         for x in min_x..=max_x {
             // top
-            ret.insert(Point { x, y: min_y });
+            ret.insert(Point2D { x, y: min_y });
             // bottom
-            ret.insert(Point { x, y: max_y });
+            ret.insert(Point2D { x, y: max_y });
         }
         for y in min_y..=max_y {
             // left
-            ret.insert(Point { x: min_x, y });
+            ret.insert(Point2D { x: min_x, y });
             // right
-            ret.insert(Point { x: max_x, y });
+            ret.insert(Point2D { x: max_x, y });
         }
         ret
     }
@@ -41,36 +44,36 @@ impl Point {
 #[derive(Debug, Clone)]
 pub struct SchematicFullNumber {
     pub number: usize,
-    neighbours: HashSet<Point>,
+    neighbours: HashSet<Point2D>,
 }
 
 impl SchematicFullNumber {
-    fn new(number: usize, start: Point, end: Point) -> SchematicFullNumber {
+    fn new(number: usize, start: Point2D, end: Point2D) -> SchematicFullNumber {
         SchematicFullNumber {
             number,
             neighbours: start.get_neighbours_to_other(&end),
         }
     }
-    pub fn get_neighbours(&self) -> &HashSet<Point> {
+    pub fn get_neighbours(&self) -> &HashSet<Point2D> {
         &self.neighbours
     }
 
-    pub fn is_adjacent(&self, point: &Point) -> bool {
+    pub fn is_adjacent(&self, point: &Point2D) -> bool {
         self.neighbours.contains(point)
     }
 }
 
 pub struct Schematic {
     pub numbers: Vec<SchematicFullNumber>,
-    pub symbols: HashSet<Point>,
-    pub gear_symbols: HashSet<Point>,
+    pub symbols: HashSet<Point2D>,
+    pub gear_symbols: HashSet<Point2D>,
 }
 
 struct SchematicBuilder {
     current_number: usize,
-    number_len: usize,
-    symbols: HashSet<Point>,
-    gear_symbols: HashSet<Point>,
+    number_len: isize,
+    symbols: HashSet<Point2D>,
+    gear_symbols: HashSet<Point2D>,
     numbers: Vec<SchematicFullNumber>,
 }
 
@@ -91,15 +94,15 @@ impl SchematicBuilder {
         self.number_len += 1;
     }
 
-    fn insert_number_if_exists(&mut self, point: &Point) {
+    fn insert_number_if_exists(&mut self, point: &Point2D) {
         if self.number_len > 0 {
             self.numbers.push(SchematicFullNumber::new(
                 self.current_number,
-                Point {
+                Point2D {
                     x: point.x - self.number_len,
                     y: point.y,
                 },
-                Point {
+                Point2D {
                     x: point.x - 1,
                     y: point.y,
                 },
@@ -109,16 +112,16 @@ impl SchematicBuilder {
         }
     }
 
-    fn process(&mut self, point: Point, value: &SchematicValue) {
+    fn process(&mut self, point: Point2D, value: &SchematicValue) {
         if let SchematicValue::Digit(digit) = value {
             self.increase_number(*digit);
         } else {
             self.insert_number_if_exists(&point);
             if &SchematicValue::Symbol == value {
-                self.symbols.insert(point.clone());
+                self.symbols.insert(point);
             } else if &SchematicValue::GearSymbol == value {
-                self.symbols.insert(point.clone());
-                self.gear_symbols.insert(point.clone());
+                self.symbols.insert(point);
+                self.gear_symbols.insert(point);
             }
         }
     }
@@ -137,17 +140,23 @@ impl Schematic {
         let mut schematic_builder = SchematicBuilder::new();
         for (y, line) in input.iter().enumerate() {
             for (x, value) in line.iter().enumerate() {
-                schematic_builder.process(Point { x, y }, value);
+                schematic_builder.process(
+                    Point2D {
+                        x: x as isize,
+                        y: y as isize,
+                    },
+                    value,
+                );
             }
-            schematic_builder.insert_number_if_exists(&Point {
-                x: input[y].len(),
-                y,
+            schematic_builder.insert_number_if_exists(&Point2D {
+                x: input[y].len() as isize,
+                y: y as isize,
             });
         }
         schematic_builder.to_schematic()
     }
 
-    pub fn get_number_neighbours_to_point(&self, point: &Point) -> Vec<usize> {
+    pub fn get_number_neighbours_to_point(&self, point: &Point2D) -> Vec<usize> {
         self.numbers
             .iter()
             .filter(|number| number.is_adjacent(point))

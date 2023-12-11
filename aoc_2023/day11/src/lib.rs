@@ -1,20 +1,20 @@
 mod parser;
 mod point;
 use crate::parser::parse_data;
-use crate::point::Point;
+use aoc_helpers::point2d::Point2D;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use std::collections::HashSet;
+use itertools::Itertools;
 
 pub struct Day11 {
-    galaxies: HashSet<Point>,
+    galaxies: Vec<Point2D>,
 }
 
-fn to_points(map: &[Vec<bool>]) -> HashSet<Point> {
-    let mut ret = HashSet::new();
-    for y in 0..map.len() {
-        for x in 0..map[y].len() {
-            if map[y][x] {
-                ret.insert(Point {
+fn to_points(map: &[Vec<bool>]) -> Vec<Point2D> {
+    let mut ret = Vec::new();
+    for (y, line) in map.iter().enumerate() {
+        for (x, value) in line.iter().enumerate() {
+            if *value {
+                ret.push(Point2D {
                     x: x as isize,
                     y: y as isize,
                 });
@@ -38,27 +38,23 @@ impl AOCCalculator for Day11 {
 }
 
 impl Day11 {
-    fn expand_horizontally_by(
-        &self,
-        galaxies: &HashSet<Point>,
-        expansion_size: usize,
-    ) -> HashSet<Point> {
-        let mut ret = HashSet::new();
+    fn expand_horizontally_by(&self, galaxies: &[Point2D], expansion_size: usize) -> Vec<Point2D> {
+        let mut ret = Vec::new();
         let mut expansion_constant = 0;
         let max = galaxies.iter().map(|point| point.x).max().unwrap_or(0);
         for i in 0..=max {
-            let filtered: Vec<Point> = galaxies
+            let filtered: Vec<Point2D> = galaxies
                 .iter()
                 .filter(|point| point.x == i)
                 .map(|point| {
                     point
-                        + &Point {
+                        + &Point2D {
                             x: expansion_constant,
                             y: 0,
                         }
                 })
                 .collect();
-            if filtered.len() == 0 {
+            if filtered.is_empty() {
                 expansion_constant += expansion_size as isize;
             } else {
                 ret.extend(filtered);
@@ -67,27 +63,23 @@ impl Day11 {
         ret
     }
 
-    fn expand_vertically_by(
-        &self,
-        galaxies: &HashSet<Point>,
-        expansion_size: usize,
-    ) -> HashSet<Point> {
-        let mut ret = HashSet::new();
+    fn expand_vertically_by(&self, galaxies: &[Point2D], expansion_size: usize) -> Vec<Point2D> {
+        let mut ret = Vec::new();
         let mut expansion_constant = 0;
         let max = galaxies.iter().map(|point| point.y).max().unwrap_or(0);
         for i in 0..=max {
-            let filtered: Vec<Point> = galaxies
+            let filtered: Vec<Point2D> = galaxies
                 .iter()
                 .filter(|point| point.y == i)
                 .map(|point| {
                     point
-                        + &Point {
+                        + &Point2D {
                             x: 0,
                             y: expansion_constant,
                         }
                 })
                 .collect();
-            if filtered.len() == 0 {
+            if filtered.is_empty() {
                 expansion_constant += expansion_size as isize;
             } else {
                 ret.extend(filtered);
@@ -96,7 +88,7 @@ impl Day11 {
         ret
     }
 
-    fn expand_galaxies_by(&self, expansion_size: usize) -> HashSet<Point> {
+    fn expand_galaxies_by(&self, expansion_size: usize) -> Vec<Point2D> {
         self.expand_horizontally_by(
             &self.expand_vertically_by(&self.galaxies, expansion_size),
             expansion_size,
@@ -107,15 +99,9 @@ impl Day11 {
         let expanded_galaxies = self.expand_galaxies_by(expansion_size);
         expanded_galaxies
             .iter()
-            .map(|galaxy| {
-                expanded_galaxies
-                    .iter()
-                    .filter(|other_galaxy| other_galaxy != &galaxy)
-                    .map(|other_galaxy| galaxy.distance_to(&other_galaxy))
-                    .sum::<usize>()
-            })
+            .combinations(2)
+            .map(|galaxy_pair| galaxy_pair[0].get_manhattan_distance(galaxy_pair[1]))
             .sum::<usize>()
-            / 2
     }
 
     fn calculate_day_a(&self) -> usize {
@@ -161,7 +147,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day11 = Day11::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 702152204842;
         let actual = day11.calculate_day_b();
         assert_eq!(expected, actual);
     }

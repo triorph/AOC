@@ -1,4 +1,5 @@
-use crate::point::Point;
+use aoc_helpers::point2d::Point2D;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Pipe {
     TopBottom,
@@ -12,31 +13,31 @@ pub enum Pipe {
 }
 
 impl Pipe {
-    pub fn all_places_when_tiled(&self) -> Vec<Point> {
+    pub fn all_places_when_tiled(&self) -> Vec<Point2D> {
         match self {
             Pipe::Empty => vec![],
-            _ => [self.neighbours(), vec![Point { x: 0, y: 0 }]]
+            _ => [self.neighbours(), vec![Point2D { x: 0, y: 0 }]]
                 .concat()
                 .into_iter()
-                .map(|x| x + Point { x: 1, y: 1 })
+                .map(|x| x + Point2D { x: 1, y: 1 })
                 .collect(),
         }
     }
 
-    pub fn neighbours(&self) -> Vec<Point> {
+    pub fn neighbours(&self) -> Vec<Point2D> {
         match self {
-            Pipe::TopBottom => vec![Point { x: 0, y: -1 }, Point { x: 0, y: 1 }],
-            Pipe::LeftRight => vec![Point { x: -1, y: 0 }, Point { x: 1, y: 0 }],
-            Pipe::TopLeft => vec![Point { x: -1, y: 0 }, Point { x: 0, y: -1 }],
-            Pipe::TopRight => vec![Point { x: 1, y: 0 }, Point { x: 0, y: -1 }],
-            Pipe::BottomLeft => vec![Point { x: -1, y: 0 }, Point { x: 0, y: 1 }],
-            Pipe::BottomRight => vec![Point { x: 1, y: 0 }, Point { x: 0, y: 1 }],
+            Pipe::TopBottom => vec![Point2D { x: 0, y: -1 }, Point2D { x: 0, y: 1 }],
+            Pipe::LeftRight => vec![Point2D { x: -1, y: 0 }, Point2D { x: 1, y: 0 }],
+            Pipe::TopLeft => vec![Point2D { x: -1, y: 0 }, Point2D { x: 0, y: -1 }],
+            Pipe::TopRight => vec![Point2D { x: 1, y: 0 }, Point2D { x: 0, y: -1 }],
+            Pipe::BottomLeft => vec![Point2D { x: -1, y: 0 }, Point2D { x: 0, y: 1 }],
+            Pipe::BottomRight => vec![Point2D { x: 1, y: 0 }, Point2D { x: 0, y: 1 }],
             Pipe::Empty => vec![],
             Pipe::Start => vec![
-                Point { x: -1, y: 0 },
-                Point { x: 1, y: 0 },
-                Point { x: 0, y: -1 },
-                Point { x: 0, y: 1 },
+                Point2D { x: -1, y: 0 },
+                Point2D { x: 1, y: 0 },
+                Point2D { x: 0, y: -1 },
+                Point2D { x: 0, y: 1 },
             ],
         }
     }

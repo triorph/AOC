@@ -1,29 +1,17 @@
 use crate::pipe::Pipe;
-use std::ops::Add;
+use aoc_helpers::point2d::Point2D;
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
-pub struct Point {
-    pub x: isize,
-    pub y: isize,
+pub trait Neighbours {
+    fn neighbours(&self, pipe: &Pipe) -> Vec<Point2D>;
+    fn all_neighbours(&self) -> Vec<Point2D>;
 }
 
-impl Point {
-    pub fn neighbours(&self, pipe: &Pipe) -> Vec<Point> {
+impl Neighbours for Point2D {
+    fn neighbours(&self, pipe: &Pipe) -> Vec<Point2D> {
         pipe.neighbours().into_iter().map(|x| x + *self).collect()
     }
 
-    pub fn all_neighbours(&self) -> Vec<Point> {
+    fn all_neighbours(&self) -> Vec<Point2D> {
         self.neighbours(&Pipe::Start)
-    }
-}
-
-impl Add for Point {
-    type Output = Point;
-
-    fn add(self, other: Point) -> Point {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
     }
 }

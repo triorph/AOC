@@ -3,7 +3,8 @@ mod pipe;
 mod point;
 use crate::parser::parse_data;
 use crate::pipe::Pipe;
-use crate::point::Point;
+use crate::point::Neighbours;
+use aoc_helpers::point2d::Point2D;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -32,7 +33,7 @@ impl Day10 {
 
     fn calculate_day_b(&self) -> usize {
         let cycle_points = self.calculate_cycle_on_tiles();
-        let mut valid_points: HashSet<Point> = HashSet::new();
+        let mut valid_points: HashSet<Point2D> = HashSet::new();
         let mut explored_points = HashSet::new();
         for point in self.iter_all_tile_points() {
             let (is_valid, found) =
@@ -47,7 +48,7 @@ impl Day10 {
             .count()
     }
 
-    fn find_starter_point(&self) -> Point {
+    fn find_starter_point(&self) -> Point2D {
         for point in self.iter_all_points() {
             if self.get_at_point(&point) == Some(&Pipe::Start) {
                 return point;
@@ -56,19 +57,19 @@ impl Day10 {
         panic!("No starter found")
     }
 
-    fn iter_all_points(&self) -> Box<dyn Iterator<Item = Point>> {
+    fn iter_all_points(&self) -> Box<dyn Iterator<Item = Point2D>> {
         Box::new(
             (0..self.map.len())
                 .cartesian_product(0..self.map[0].len())
-                .map(|(y, x)| Point {
+                .map(|(y, x)| Point2D {
                     x: x as isize,
                     y: y as isize,
                 }),
         )
     }
 
-    fn get_cycle_distances(&self) -> HashMap<Point, usize> {
-        let mut distance_along_cycle: HashMap<Point, usize> = HashMap::new();
+    fn get_cycle_distances(&self) -> HashMap<Point2D, usize> {
+        let mut distance_along_cycle: HashMap<Point2D, usize> = HashMap::new();
         // use a non-recursive BFS search to stop a stack depth being reached
         let mut to_explore = VecDeque::new();
         to_explore.push_back((self.find_starter_point(), 0));
@@ -78,7 +79,7 @@ impl Day10 {
             }
             let current_minimum = distance_along_cycle.get(&point);
             if current_minimum.is_none() || current_minimum.unwrap() > &distance {
-                distance_along_cycle.insert(point.clone(), distance);
+                distance_along_cycle.insert(point, distance);
                 for neighbour in self.neighbours(&point).into_iter() {
                     if self.neighbours(&neighbour).contains(&point) {
                         // for the Start this check is necessary
@@ -90,28 +91,28 @@ impl Day10 {
         distance_along_cycle
     }
 
-    fn iter_all_tile_points(&self) -> Box<dyn Iterator<Item = Point>> {
+    fn iter_all_tile_points(&self) -> Box<dyn Iterator<Item = Point2D>> {
         Box::new(
             (0..(self.map.len() * 3))
                 .cartesian_product(0..(self.map[0].len() * 3))
-                .map(|(y, x)| Point {
+                .map(|(y, x)| Point2D {
                     x: x as isize,
                     y: y as isize,
                 }),
         )
     }
 
-    fn point_within_bounds(&self, point: &Point) -> bool {
+    fn point_within_bounds(&self, point: &Point2D) -> bool {
         (0..self.map.len()).contains(&(point.y as usize))
             && (0..self.map[point.y as usize].len()).contains(&(point.x as usize))
     }
 
-    fn point_within_tile_bounds(&self, point: &Point) -> bool {
+    fn point_within_tile_bounds(&self, point: &Point2D) -> bool {
         (0..(self.map.len() * 3)).contains(&(point.y as usize))
             && (0..(self.map[point.y as usize / 3].len() * 3)).contains(&(point.x as usize))
     }
 
-    fn get_at_point(&self, point: &Point) -> Option<&Pipe> {
+    fn get_at_point(&self, point: &Point2D) -> Option<&Pipe> {
         if self.point_within_bounds(point) {
             Some(&self.map[point.y as usize][point.x as usize])
         } else {
@@ -119,7 +120,7 @@ impl Day10 {
         }
     }
 
-    fn neighbours(&self, point: &Point) -> Vec<Point> {
+    fn neighbours(&self, point: &Point2D) -> Vec<Point2D> {
         if let Some(pipe) = self.get_at_point(point) {
             point.neighbours(pipe)
         } else {
@@ -130,13 +131,13 @@ impl Day10 {
     #[allow(dead_code)]
     fn print_part_b(
         &self,
-        invalid_points: &HashSet<Point>,
-        found_points: &HashSet<Point>,
+        invalid_points: &HashSet<Point2D>,
+        found_points: &HashSet<Point2D>,
     ) -> String {
         let mut ret = "".to_string();
         for y in 0..(self.map.len() * 3) {
             for x in 0..(self.map[y / 3].len() * 3) {
-                let point = Point {
+                let point = Point2D {
                     x: x as isize,
                     y: y as isize,
                 };
@@ -154,11 +155,11 @@ impl Day10 {
     }
 
     #[allow(dead_code)]
-    fn print_point_minimums(&self, point_minimums: &HashMap<Point, usize>) -> String {
+    fn print_point_minimums(&self, point_minimums: &HashMap<Point2D, usize>) -> String {
         let mut ret = "".to_string();
         for y in 0..self.map.len() {
             for x in 0..self.map[y].len() {
-                match point_minimums.get(&Point {
+                match point_minimums.get(&Point2D {
                     x: x as isize,
                     y: y as isize,
                 }) {
@@ -173,17 +174,17 @@ impl Day10 {
         ret
     }
 
-    fn calculate_cycle_on_tiles(&self) -> HashSet<Point> {
+    fn calculate_cycle_on_tiles(&self) -> HashSet<Point2D> {
         let original_cycle = self.get_cycle_distances();
         // create a 3x3 tile out of each point
         let mut ret = HashSet::new();
         for point in original_cycle.keys() {
-            let tile_start = Point {
+            let tile_start = Point2D {
                 x: point.x * 3,
                 y: point.y * 3,
             };
             for tripled in self
-                .get_at_point(&point)
+                .get_at_point(point)
                 .unwrap_or(&Pipe::Empty)
                 .all_places_when_tiled()
                 .into_iter()
@@ -196,12 +197,12 @@ impl Day10 {
 
     fn explore_inside_cycle_tiles(
         &self,
-        start: &Point,
-        explored_points: &mut HashSet<Point>,
-        points_of_cycle: &HashSet<Point>,
-    ) -> (bool, HashSet<Point>) {
+        start: &Point2D,
+        explored_points: &mut HashSet<Point2D>,
+        points_of_cycle: &HashSet<Point2D>,
+    ) -> (bool, HashSet<Point2D>) {
         let mut to_explore = VecDeque::new();
-        to_explore.push_back(start.clone());
+        to_explore.push_back(*start);
         let mut found_points = HashSet::new();
         let mut is_valid = true;
         while let Some(point) = to_explore.pop_front() {

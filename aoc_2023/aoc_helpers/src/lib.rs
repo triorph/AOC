@@ -1,6 +1,7 @@
 use std::fs::read_to_string;
 pub mod hash_utils;
 pub mod modular_math;
+pub mod point2d;
 
 #[derive(Debug)]
 pub struct AOCFileOrParseError;
