@@ -2,15 +2,21 @@ extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day11_parser() for str {
-    rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    pub rule parse() -> Vec<usize>
-        = lines_of_numbers:number() ++ ("\n" +) "\n" * { lines_of_numbers }
+    rule empty() -> bool
+        = "." { false }
+    rule galaxy() -> bool
+        = "#" { true }
+    rule location() -> bool
+        = location: (empty() / galaxy()) { location}
+    rule line() -> Vec<bool>
+        = line:location() ++ ""
+    pub rule parse() -> Vec<Vec<bool>>
+        = lines:line() ++ ("\n" +) "\n" * { lines }
 }}
 
-pub fn parse_data(input: &str) -> Result<(), AOCFileOrParseError> {
-    if let Ok(_ret) = day11_parser::parse(input) {
-        Ok(())
+pub fn parse_data(input: &str) -> Result<Vec<Vec<bool>>, AOCFileOrParseError> {
+    if let Ok(ret) = day11_parser::parse(input) {
+        Ok(ret)
     } else {
         Err(AOCFileOrParseError)
     }
@@ -26,7 +32,38 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day11_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
+        let expected: Vec<Vec<bool>> = vec![
+            vec![
+                false, false, false, true, false, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, false, false, true, false, false,
+            ],
+            vec![
+                true, false, false, false, false, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, false, true, false, false, false,
+            ],
+            vec![
+                false, true, false, false, false, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, false, false, false, false, true,
+            ],
+            vec![
+                false, false, false, false, false, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, false, false, true, false, false,
+            ],
+            vec![
+                true, false, false, false, true, false, false, false, false, false,
+            ],
+        ];
         assert_eq!(expected, actual)
     }
 }
