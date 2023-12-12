@@ -101,7 +101,6 @@ impl ConditionReport {
     pub fn solve_day_a(&self) -> usize {
         let permutations = self.get_permutations();
         let final_permute = self.get_next_undamaged(&permutations);
-        println!("Final permutation is: {:?}", final_permute);
         *final_permute
             .get(&CriterionState {
                 current_damaged_len: 0,
