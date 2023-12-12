@@ -18,7 +18,7 @@ impl CubeSetTrait for CubeSet {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     fn get_power(&self) -> usize {

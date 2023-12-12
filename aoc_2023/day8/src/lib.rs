@@ -6,10 +6,11 @@ use crate::parser::parse_data;
 use aoc_helpers::modular_math::least_common_multiple;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use direction::Direction;
+use parser::NodeMap;
 
 pub struct Day8 {
     directions: Vec<Direction>,
-    all_nodes: HashMap<String, (String, String)>,
+    all_nodes: NodeMap,
 }
 
 impl AOCCalculator for Day8 {
@@ -41,15 +42,15 @@ impl Day8 {
             if current_node == "ZZZ" {
                 return i;
             }
-            current_node = self.get_next_node(&current_node, &direction);
+            current_node = self.get_next_node(&current_node, direction);
         }
         panic!("Will never reach here");
     }
 
     fn detect_cycle(path: &[String]) -> Option<usize> {
         const MIN_REPEATS: usize = 5;
-        for cycle_size in 1..=(path.len() / MIN_REPEATS) {
-            if (0..cycle_size)
+        (1..=(path.len() / MIN_REPEATS)).find(|&cycle_size| {
+            (0..cycle_size)
                 .map(|offset| {
                     // check all elements at offset are the same
                     (0..MIN_REPEATS)
@@ -60,11 +61,7 @@ impl Day8 {
                 })
                 .all(|x| x)
             // all offsets are equal at cycle_size steps
-            {
-                return Some(cycle_size);
-            }
-        }
-        None
+        })
     }
 
     fn build_full_direction_node_map(&self) -> HashMap<String, String> {
@@ -76,7 +73,7 @@ impl Day8 {
                 .map(|current_node| self.get_next_node(&current_node, direction))
                 .collect()
         }
-        HashMap::from_iter(starter_nodes.into_iter().zip(current_nodes.into_iter()))
+        HashMap::from_iter(starter_nodes.into_iter().zip(current_nodes))
     }
 
     fn get_cycle_lengths_for_day_b_nodes(&self, starter_nodes: &[String]) -> Vec<usize> {
@@ -133,7 +130,7 @@ impl Day8 {
         let lcm = cycle_lengths
             .iter()
             .copied()
-            .reduce(|a, b| least_common_multiple(a, b))
+            .reduce(least_common_multiple)
             .unwrap();
         lcm
     }

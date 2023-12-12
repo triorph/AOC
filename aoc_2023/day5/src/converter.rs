@@ -86,7 +86,7 @@ impl ConverterMap {
             .iter()
             .map(|converter| converter.convert(input))
             .filter(|result| result.is_some())
-            .map(|result| result.unwrap())
+            .flatten()
             .next()
             .unwrap_or(input)
     }
@@ -105,8 +105,7 @@ impl ConverterMap {
     pub fn convert_ranges(&self, input: &[Range<usize>]) -> Vec<Range<usize>> {
         input
             .iter()
-            .map(|range| self.convert_range(range))
-            .flatten()
+            .flat_map(|range| self.convert_range(range))
             .collect()
     }
 }
@@ -118,6 +117,7 @@ mod tests {
     use super::{Converter, ConverterMap};
 
     #[test]
+    #[allow(clippy::single_range_in_vec_init)]
     fn test_below() {
         let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 10)]);
         let actual = converter_map.convert_ranges(&[(45..55)]);
@@ -126,6 +126,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::single_range_in_vec_init)]
     fn test_above() {
         let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 10)]);
         let actual = converter_map.convert_ranges(&[(55..65)]);
@@ -134,6 +135,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::single_range_in_vec_init)]
     fn test_within() {
         let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 15)]);
         let actual = converter_map.convert_ranges(&[(55..60)]);
@@ -142,6 +144,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::single_range_in_vec_init)]
     fn test_around() {
         let converter_map = ConverterMap::new(vec![Converter::new(70, 50, 5)]);
         let actual = converter_map.convert_ranges(&[(45..60)]);

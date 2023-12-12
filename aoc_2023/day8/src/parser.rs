@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use crate::direction::Direction;
 use aoc_helpers::AOCFileOrParseError;
 
+pub type NodeMap = HashMap<String, (String, String)>;
+
 peg::parser! { pub grammar day8_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
@@ -19,7 +21,7 @@ peg::parser! { pub grammar day8_parser() for str {
         = node:$(['A'..='Z'|'1'..='9']*<3>) { node.to_string() }
     rule node_edges() -> (String, (String, String))
         = input:node() " = (" left:node() ", " right:node() ")" " "*{ (input, (left, right))}
-    rule all_nodes() -> HashMap<String, (String, String)>
+    rule all_nodes() -> NodeMap
         = all_nodes:node_edges() ++ ("\n"+)  "\n"* {
             let mut ret = HashMap::new();
             for (node, (left, right)) in all_nodes.into_iter() {
@@ -27,13 +29,11 @@ peg::parser! { pub grammar day8_parser() for str {
             }
             ret
         }
-    pub rule parse() -> (Vec<Direction>, HashMap<String, (String, String)>)
+    pub rule parse() -> (Vec<Direction>, NodeMap)
         = directions:directions() "\n"+ all_nodes:all_nodes() "\n"* { (directions, all_nodes) }
 }}
 
-pub fn parse_data(
-    input: &str,
-) -> Result<(Vec<Direction>, HashMap<String, (String, String)>), AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<(Vec<Direction>, NodeMap), AOCFileOrParseError> {
     if let Ok(ret) = day8_parser::parse(input) {
         Ok(ret)
     } else {

@@ -107,7 +107,7 @@ impl PokerHand {
     pub fn from_string(cards: &str) -> PokerHand {
         let cards = cards
             .chars()
-            .map(|c| PokerCard::from_char(c))
+            .map(PokerCard::from_char)
             .collect::<Vec<PokerCard>>()
             .try_into()
             .expect("Will be of size 5");
@@ -141,7 +141,7 @@ impl PokerHand {
                 return interim_cmp;
             }
         }
-        return Ordering::Equal;
+        Ordering::Equal
     }
 
     pub fn compare_day_b(&self, other: &PokerHand) -> Ordering {
@@ -159,7 +159,7 @@ impl PokerHand {
                 return interim_cmp;
             }
         }
-        return Ordering::Equal;
+        Ordering::Equal
     }
 }
 
@@ -175,12 +175,11 @@ impl PokerValue {
     fn build_frequencies_and_fix_jokers(cards: &[PokerCard]) -> HashMap<PokerCard, usize> {
         let mut frequencies = PokerValue::build_frequencies(cards);
         let joker_value = frequencies.remove(&PokerCard::Jack).unwrap_or(0);
-        let key_to_increase_by_joker = (*frequencies
+        let key_to_increase_by_joker = *frequencies
             .iter_mut()
             .max_by(|(_, first), (_, second)| first.cmp(second))
             .map(|(key, _)| key)
-            .unwrap_or(&PokerCard::Jack))
-        .clone();
+            .unwrap_or(&PokerCard::Jack);
         *(frequencies.entry(key_to_increase_by_joker).or_insert(0)) += joker_value;
         frequencies
     }
@@ -192,13 +191,13 @@ impl PokerValue {
             .copied()
             .collect::<Vec<usize>>()
         {
-            val if &val == &[5] => PokerValue::FiveOfAKind,
-            val if &val == &[4] => PokerValue::FourOfAKind,
-            val if &val == &[3, 2] => PokerValue::FullHouse,
-            val if &val == &[2, 3] => PokerValue::FullHouse,
-            val if &val == &[3] => PokerValue::ThreeOfAKind,
-            val if &val == &[2, 2] => PokerValue::TwoPairs,
-            val if &val == &[2] => PokerValue::OnePair,
+            val if val == [5] => PokerValue::FiveOfAKind,
+            val if val == [4] => PokerValue::FourOfAKind,
+            val if val == [3, 2] => PokerValue::FullHouse,
+            val if val == [2, 3] => PokerValue::FullHouse,
+            val if val == [3] => PokerValue::ThreeOfAKind,
+            val if val == [2, 2] => PokerValue::TwoPairs,
+            val if val == [2] => PokerValue::OnePair,
             _ => PokerValue::AllDifferent,
         }
     }
@@ -288,7 +287,7 @@ mod test {
                 PokerValue::from_day_a(
                     &input
                         .chars()
-                        .map(|c| PokerCard::from_char(c))
+                        .map(PokerCard::from_char)
                         .collect::<Vec<PokerCard>>()
                 ),
                 result
@@ -314,7 +313,7 @@ mod test {
                 PokerValue::from_day_b(
                     &input
                         .chars()
-                        .map(|c| PokerCard::from_char(c))
+                        .map(PokerCard::from_char)
                         .collect::<Vec<PokerCard>>()
                 ),
                 result
