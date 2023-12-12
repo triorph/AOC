@@ -1,30 +1,29 @@
 extern crate peg;
+use crate::hot_spring::{ConditionReport, HotSpringCondition};
 use aoc_helpers::AOCFileOrParseError;
 
-pub type Line = (Vec<Option<bool>>, Vec<usize>);
-
 peg::parser! { pub grammar day12_parser() for str {
-    rule unknown() -> Option<bool>
-        = "?" { None }
-    rule empty() -> Option<bool>
-        = "." { Some(false) }
-    rule filled() -> Option<bool>
-        = "#" { Some(true) }
-    rule place() -> Option<bool>
-        = place: (unknown() / empty() / filled()) { place }
-    rule places() -> Vec<Option<bool>>
-        = places:place() ++ ""
+    rule unknown() -> HotSpringCondition
+        = "?" { HotSpringCondition::Unknown }
+    rule undamaged() -> HotSpringCondition
+        = "." { HotSpringCondition::Undamaged }
+    rule damaged() -> HotSpringCondition
+        = "#" { HotSpringCondition::Damaged }
+    rule hot_spring_condition() -> HotSpringCondition
+        = condition: (unknown() / undamaged() / damaged()) { condition }
+    rule hot_spring_conditions() -> Vec<HotSpringCondition>
+        = conditions:hot_spring_condition() ++ "" { conditions }
     rule number() -> usize
         = n:$(['0'..='9']+) {(n.parse().expect(&format!("Was expecting a number string {}", n)[..]))}
-    rule arrangement() -> Vec<usize>
-        = arrangement:number() ++ ","
-    rule line() -> (Vec<Option<bool>>, Vec<usize>)
-        = places:places()  " "+ arrangement:arrangement() { (places, arrangement) }
-    pub rule parse() -> Vec<(Vec<Option<bool>>, Vec<usize>)>
-        = lines:line() ++ ("\n" +) "\n" * { lines }
+    rule criteria() -> Vec<usize>
+        = criteria:number() ++ ","
+    rule condition_report() -> ConditionReport
+        = conditions:hot_spring_conditions()  " "+ criteria:criteria() {  ConditionReport::new(conditions, criteria) }
+    pub rule parse() -> Vec<ConditionReport>
+        = condition_reports:condition_report() ++ ("\n" +) "\n" * { condition_reports }
 }}
 
-pub fn parse_data(input: &str) -> Result<Vec<Line>, AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<Vec<ConditionReport>, AOCFileOrParseError> {
     if let Ok(ret) = day12_parser::parse(input) {
         Ok(ret)
     } else {
