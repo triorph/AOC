@@ -2,13 +2,21 @@ extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar day13_parser() for str {
-    rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
-    pub rule parse() -> Vec<usize>
-        = lines:number() ++ ("\n" +) "\n" * { lines }
+    rule volcano() -> bool
+        = "#" { true }
+    rule ash() -> bool
+        = "." { false }
+    rule tile() -> bool
+        = tile:(ash() / volcano()) { tile }
+    rule line() -> Vec<bool>
+        = line:tile() ++ ""
+    rule location() -> Vec<Vec<bool>>
+        = location:line() ++ "\n"
+    pub rule parse() -> Vec<Vec<Vec<bool>>>
+        = locations:location() ++ ("\n" +) "\n" * { locations }
 }}
 
-pub fn parse_data(input: &str) -> Result<Vec<usize>, AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<Vec<Vec<Vec<bool>>>, AOCFileOrParseError> {
     if let Ok(ret) = day13_parser::parse(input) {
         Ok(ret)
     } else {
@@ -26,7 +34,6 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day13_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
-        assert_eq!(expected, actual)
+        assert_eq!(2, actual.len());
     }
 }
