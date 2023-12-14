@@ -2,13 +2,13 @@ mod parser;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
-pub struct Skeleton {
+pub struct Day14 {
     data: Vec<usize>,
 }
 
-impl AOCCalculator for Skeleton {
-    fn new(filename: &str) -> Result<Skeleton, AOCFileOrParseError> {
-        Ok(Skeleton {
+impl AOCCalculator for Day14 {
+    fn new(filename: &str) -> Result<Day14, AOCFileOrParseError> {
+        Ok(Day14 {
             data: parse_data(&read_input_file(filename)?)?,
         })
     }
@@ -19,7 +19,7 @@ impl AOCCalculator for Skeleton {
     }
 }
 
-impl Skeleton {
+impl Day14 {
     fn calculate_day_a(&self) -> usize {
         0
     }
@@ -36,33 +36,33 @@ mod tests {
 
     #[test]
     fn test_calculate_day_a() {
-        let skeleton = Skeleton::new("data/test_data.txt").unwrap();
+        let day14 = Day14::new("data/test_data.txt").unwrap();
         let expected = 0;
-        let actual = skeleton.calculate_day_a();
+        let actual = day14.calculate_day_a();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_calculate_day_b() {
-        let skeleton = Skeleton::new("data/test_data.txt").unwrap();
+        let day14 = Day14::new("data/test_data.txt").unwrap();
         let expected = 0;
-        let actual = skeleton.calculate_day_b();
+        let actual = day14.calculate_day_b();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_real_input_calculate_day_a() {
-        let skeleton = Skeleton::new("data/input_data.txt").unwrap();
+        let day14 = Day14::new("data/input_data.txt").unwrap();
         let expected = 0;
-        let actual = skeleton.calculate_day_a();
+        let actual = day14.calculate_day_a();
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_real_input_calculate_day_b() {
-        let skeleton = Skeleton::new("data/input_data.txt").unwrap();
+        let day14 = Day14::new("data/input_data.txt").unwrap();
         let expected = 0;
-        let actual = skeleton.calculate_day_b();
+        let actual = day14.calculate_day_b();
         assert_eq!(expected, actual);
     }
 }

@@ -1,7 +1,7 @@
 extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
-peg::parser! { pub grammar skeleton_parser() for str {
+peg::parser! { pub grammar day14_parser() for str {
     rule number() -> usize
         = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
     pub rule parse() -> Vec<usize>
@@ -9,7 +9,7 @@ peg::parser! { pub grammar skeleton_parser() for str {
 }}
 
 pub fn parse_data(input: &str) -> Result<Vec<usize>, AOCFileOrParseError> {
-    if let Ok(ret) = skeleton_parser::parse(input) {
+    if let Ok(ret) = day14_parser::parse(input) {
         Ok(ret)
     } else {
         Err(AOCFileOrParseError)
@@ -25,7 +25,7 @@ mod test {
     #[test]
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
-        let actual = skeleton_parser::parse(&input_str).expect("Should parse successfully");
+        let actual = day14_parser::parse(&input_str).expect("Should parse successfully");
         let expected: Vec<usize> = vec![];
         assert_eq!(expected, actual)
     }
