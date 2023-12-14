@@ -2,6 +2,7 @@ mod parser;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Skeleton {
     data: Vec<usize>,
 }
