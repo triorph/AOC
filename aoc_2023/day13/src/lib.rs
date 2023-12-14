@@ -2,10 +2,12 @@ mod parser;
 use std::cmp::min;
 
 use crate::parser::parse_data;
+use aoc_helpers::vec::Transposable;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
+use parser::Tile;
 
 pub struct Day13 {
-    locations: Vec<Vec<Vec<bool>>>,
+    locations: Vec<Vec<Vec<Tile>>>,
 }
 
 impl AOCCalculator for Day13 {
@@ -22,65 +24,50 @@ impl AOCCalculator for Day13 {
 }
 
 impl Day13 {
-    fn assess_location_column(&self, location: &[Vec<bool>], smudge_count: usize) -> Option<usize> {
-        for i in 0..(location[0].len() - 1) {
-            let size = min(i + 1, location[0].len() - i - 1);
-            if (0..size)
-                .map(|s| {
-                    let column_1 = i - s;
-                    let column_2 = i + s + 1;
-                    (0..location.len())
-                        .filter(|y| location[*y][column_1] != location[*y][column_2])
-                        .count()
-                })
-                .sum::<usize>()
-                == smudge_count
-            {
-                return Some(i + 1);
+    fn find_error_count(&self, location: &[Vec<Tile>], mirror_column: usize) -> usize {
+        (0..min(mirror_column + 1, location[0].len() - mirror_column - 1))
+            .map(|column| {
+                (0..location.len())
+                    .filter(|y| {
+                        location[*y][mirror_column - column]
+                            != location[*y][mirror_column + column + 1]
+                    })
+                    .count()
+            })
+            .sum::<usize>()
+    }
+
+    fn find_column_of_mirror(&self, location: &[Vec<Tile>], smudge_count: usize) -> Option<usize> {
+        for mirror_candidate in 0..(location[0].len() - 1) {
+            if self.find_error_count(location, mirror_candidate) == smudge_count {
+                return Some(mirror_candidate + 1);
             }
         }
         None
     }
 
-    fn assess_location_row(&self, location: &[Vec<bool>], smudge_count: usize) -> Option<usize> {
-        for i in 0..(location.len() - 1) {
-            let size = min(i + 1, location.len() - i - 1);
-            if (0..size)
-                .map(|s| {
-                    let row_1 = i - s;
-                    let row_2 = i + s + 1;
-                    (0..location[0].len())
-                        .filter(|x| location[row_1][*x] != location[row_2][*x])
-                        .count()
-                })
-                .sum::<usize>()
-                == smudge_count
-            {
-                return Some((i + 1) * 100);
-            }
-        }
-        None
+    fn get_location_score(&self, location: &[Vec<Tile>], smudge_count: usize) -> usize {
+        self.find_column_of_mirror(location, smudge_count)
+            .unwrap_or_else(|| {
+                self.find_column_of_mirror(&location.transpose(), smudge_count)
+                    .expect("should exist")
+                    * 100
+            })
     }
 
-    fn get_location_score(&self, smudge_count: usize) -> usize {
+    fn get_all_locations_score(&self, smudge_count: usize) -> usize {
         self.locations
             .iter()
-            .map(|location| {
-                self.assess_location_column(location, smudge_count)
-                    .unwrap_or_else(|| {
-                        self.assess_location_row(location, smudge_count)
-                            .expect("should exist")
-                    })
-            })
+            .map(|location| self.get_location_score(location, smudge_count))
             .sum()
     }
 
     fn calculate_day_a(&self) -> usize {
-        self.get_location_score(0)
+        self.get_all_locations_score(0)
     }
 
     fn calculate_day_b(&self) -> usize {
-        self.get_location_score(1)
+        self.get_all_locations_score(1)
     }
 }
 

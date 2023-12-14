@@ -1,22 +1,28 @@
 extern crate peg;
 use aoc_helpers::AOCFileOrParseError;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Tile {
+    Ash,
+    Volcano,
+}
+
 peg::parser! { pub grammar day13_parser() for str {
-    rule volcano() -> bool
-        = "#" { true }
-    rule ash() -> bool
-        = "." { false }
-    rule tile() -> bool
+    rule volcano() -> Tile
+        = "#" { Tile::Volcano }
+    rule ash() -> Tile
+        = "." { Tile::Ash }
+    rule tile() -> Tile
         = tile:(ash() / volcano()) { tile }
-    rule line() -> Vec<bool>
+    rule line() -> Vec<Tile>
         = line:tile() ++ ""
-    rule location() -> Vec<Vec<bool>>
+    rule location() -> Vec<Vec<Tile>>
         = location:line() ++ "\n"
-    pub rule parse() -> Vec<Vec<Vec<bool>>>
+    pub rule parse() -> Vec<Vec<Vec<Tile>>>
         = locations:location() ++ ("\n" +) "\n" * { locations }
 }}
 
-pub fn parse_data(input: &str) -> Result<Vec<Vec<Vec<bool>>>, AOCFileOrParseError> {
+pub fn parse_data(input: &str) -> Result<Vec<Vec<Vec<Tile>>>, AOCFileOrParseError> {
     if let Ok(ret) = day13_parser::parse(input) {
         Ok(ret)
     } else {
