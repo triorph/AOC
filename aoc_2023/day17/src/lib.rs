@@ -1,6 +1,8 @@
+mod crucible;
 mod parser;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BinaryHeap, HashMap};
 
+use crate::crucible::CrucibleLocation;
 use crate::parser::parse_data;
 use aoc_helpers::{point2d::Point2D, read_input_file, AOCCalculator, AOCFileOrParseError};
 
@@ -22,89 +24,24 @@ impl AOCCalculator for Day17 {
     }
 }
 
-trait Neighbours {
-    fn get_neighbours(&self) -> Vec<Point2D>;
-}
+// we need a single object for the binaryHeap with its custom ordering.
+// In this case, we just rely on the distance for ordering and ignore
+// everything else.
+//
+// It could be an okay idea to use manhattan distance from 0,0 as the
+// next ordering point
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct PathState(CrucibleLocation, usize);
 
-impl Neighbours for Point2D {
-    fn get_neighbours(&self) -> Vec<Point2D> {
-        vec![
-            Point2D { x: 0, y: -1 } + *self,
-            Point2D { x: 1, y: 0 } + *self,
-            Point2D { x: 0, y: 1 } + *self,
-            Point2D { x: -1, y: 0 } + *self,
-        ]
+impl Ord for PathState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.1.cmp(&other.1).reverse()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
-pub enum Direction {
-    Up,
-    Left,
-    Right,
-    Down,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
-struct Crucible {
-    dir: Direction,
-    length: usize,
-    min: usize,
-    max: usize,
-}
-
-impl Direction {
-    fn as_point_delta(&self) -> Point2D {
-        match self {
-            Direction::Up => Point2D { x: 0, y: -1 },
-            Direction::Left => Point2D { x: -1, y: 0 },
-            Direction::Right => Point2D { x: 1, y: 0 },
-            Direction::Down => Point2D { x: 0, y: 1 },
-        }
-    }
-}
-
-impl Crucible {
-    fn init(dir: Direction, min: usize, max: usize) -> Crucible {
-        Crucible {
-            dir,
-            length: 1,
-            min,
-            max,
-        }
-    }
-
-    fn get_neighbours(&self) -> Vec<Crucible> {
-        let mut ret = Vec::new();
-        if self.length < self.max {
-            ret.push(Crucible {
-                dir: self.dir,
-                length: self.length + 1,
-                min: self.min,
-                max: self.max,
-            })
-        }
-        if self.length >= self.min {
-            ret.extend(match self.dir {
-                Direction::Up => vec![
-                    Crucible::init(Direction::Left, self.min, self.max),
-                    Crucible::init(Direction::Right, self.min, self.max),
-                ],
-                Direction::Left => vec![
-                    Crucible::init(Direction::Up, self.min, self.max),
-                    Crucible::init(Direction::Down, self.min, self.max),
-                ],
-                Direction::Right => vec![
-                    Crucible::init(Direction::Up, self.min, self.max),
-                    Crucible::init(Direction::Down, self.min, self.max),
-                ],
-                Direction::Down => vec![
-                    Crucible::init(Direction::Left, self.min, self.max),
-                    Crucible::init(Direction::Right, self.min, self.max),
-                ],
-            });
-        }
-        ret
+impl PartialOrd for PathState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -122,54 +59,69 @@ impl Day17 {
         }
     }
 
-    fn find_shortest_path(&self, starting_crucible: Crucible) -> usize {
-        let mut current_shortest: HashMap<(Point2D, Crucible), usize> = HashMap::new();
-        let mut paths = VecDeque::new();
-        let first_path = (Point2D { x: 0, y: 0 }, 0, starting_crucible);
-        paths.push_back(first_path);
-        while let Some((point, distance, direction)) = paths.pop_front() {
-            if let Some(prev_distance) = current_shortest.get(&(point, direction)) {
-                if prev_distance <= &distance {
-                    continue;
-                }
+    fn is_distance_valid(
+        &self,
+        seen: &HashMap<CrucibleLocation, usize>,
+        final_best: Option<usize>,
+        crucible_location: &CrucibleLocation,
+        distance: usize,
+    ) -> bool {
+        if seen
+            .get(crucible_location)
+            .map(|prev_distance| prev_distance <= &distance)
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        if final_best
+            .map(|final_best| final_best <= distance)
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        true
+    }
+
+    fn find_shortest_path(&self, start: CrucibleLocation) -> usize {
+        // essentially dijkstra's algorithm. The main difference
+        // is that instead of assigning each point a "best" value and aborting
+        // early if you exceed that point, we assign the combined
+        // "point + direction + length along that direction" (conveniently labelled as a
+        // crucible_location here).
+        //
+        // Works with a VecDeque, but is slow. Changing to a BinaryHeap sped up from 20s for the
+        // whole process to 0.5 seconds.
+        let mut seen: HashMap<CrucibleLocation, usize> = HashMap::new();
+        let mut paths = BinaryHeap::new();
+        paths.push(PathState(start, 0));
+        let mut final_best = None;
+        let end = Point2D {
+            x: self.lava_pool[0].len() as isize - 1,
+            y: self.lava_pool.len() as isize - 1,
+        };
+        while let Some(PathState(crucible_location, distance)) = paths.pop() {
+            if !self.is_distance_valid(&seen, final_best, &crucible_location, distance) {
+                continue;
             }
-            current_shortest.insert((point, direction), distance);
-            for new_direction in direction.get_neighbours().into_iter() {
-                let neighbour = point + new_direction.dir.as_point_delta();
-                if let Some(distance_increase) = self.value_at_point(&neighbour) {
-                    paths.push_back((neighbour, distance + distance_increase, new_direction));
+            seen.insert(crucible_location.clone(), distance);
+            if crucible_location.is_at_end(&end) {
+                final_best = Some(distance);
+            }
+            for neighbour in crucible_location.get_neighbours().into_iter() {
+                if let Some(distance_increase) = self.value_at_point(&neighbour.location) {
+                    paths.push(PathState(neighbour, distance + distance_increase));
                 }
             }
         }
-
-        *current_shortest
-            .iter()
-            .filter(|((point, crucible), _)| {
-                crucible.length >= crucible.min
-                    && point.x == self.lava_pool[self.lava_pool.len() - 1].len() as isize - 1
-                    && point.y == self.lava_pool.len() as isize - 1
-            })
-            .map(|(_, value)| value)
-            .min()
-            .unwrap()
+        final_best.unwrap_or(0)
     }
 
     fn calculate_day_a(&self) -> usize {
-        self.find_shortest_path(Crucible {
-            dir: Direction::Right,
-            length: 0,
-            min: 0,
-            max: 3,
-        })
+        self.find_shortest_path(CrucibleLocation::get_starting_crucible_location(1, 3))
     }
 
     fn calculate_day_b(&self) -> usize {
-        self.find_shortest_path(Crucible {
-            dir: Direction::Right,
-            length: 0,
-            min: 4,
-            max: 10,
-        })
+        self.find_shortest_path(CrucibleLocation::get_starting_crucible_location(4, 10))
     }
 }
 
@@ -213,18 +165,8 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day17 = Day17::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 1037;
         let actual = day17.calculate_day_b();
-        assert!(
-            actual > 1008,
-            "Your answer of {} is not greater than 1008, which was said to be too low",
-            actual
-        );
-        assert!(
-            actual < 1066,
-            "Your answer of {} is not less than 1066, which was said to be too high",
-            actual
-        );
         assert_eq!(expected, actual);
     }
 }
