@@ -1,9 +1,15 @@
-use std::ops::Add;
+use std::{fmt::Debug, ops::Add};
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Point2D {
     pub x: isize,
     pub y: isize,
+}
+
+impl Debug for Point2D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
 }
 
 pub trait Neighbours {
