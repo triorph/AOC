@@ -23,6 +23,7 @@ impl AOCCalculator for Day14 {
 }
 
 impl Day14 {
+    #[allow(dead_code)]
     fn print(&self) -> String {
         let mut ret: String = String::new();
         for line in self.tiles.iter() {
@@ -93,6 +94,7 @@ impl Day14 {
         let mut obj = self.to_owned();
         for _ in 0..1000 {
             // just tried 1000 instead of 1billion and it worked.. lol
+            // TODO: actually do cycle detection for this
             obj.run_one_cycle();
         }
         obj.calculate_load()

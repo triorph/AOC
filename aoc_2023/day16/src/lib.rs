@@ -1,9 +1,12 @@
+mod laser;
 mod parser;
+mod room;
+use crate::laser::{Direction, Laser};
 use std::collections::HashSet;
 
 use crate::parser::parse_data;
+use crate::room::Room;
 use aoc_helpers::{point2d::Point2D, read_input_file, AOCCalculator, AOCFileOrParseError};
-use parser::Room;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day16 {
@@ -23,83 +26,6 @@ impl AOCCalculator for Day16 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Direction {
-    Up,
-    Right,
-    Left,
-    Down,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-struct Movement(Point2D, Direction);
-
-impl Movement {
-    fn next_movement(&self) -> Movement {
-        Movement(
-            self.0
-                + match self.1 {
-                    Direction::Up => Point2D { x: 0, y: -1 },
-                    Direction::Right => Point2D { x: 1, y: 0 },
-                    Direction::Left => Point2D { x: -1, y: 0 },
-                    Direction::Down => Point2D { x: 0, y: 1 },
-                },
-            self.1,
-        )
-    }
-
-    fn next_direction(&self, room: &Option<Room>) -> Vec<Movement> {
-        match (self.1, room) {
-            (_, None) => vec![],
-            (_, Some(Room::Empty)) => vec![*self],
-            (Direction::Up, Some(Room::SplitterVertical)) => vec![*self],
-            (Direction::Down, Some(Room::SplitterVertical)) => vec![*self],
-            (Direction::Left, Some(Room::SplitterHorizontal)) => vec![*self],
-            (Direction::Right, Some(Room::SplitterHorizontal)) => vec![*self],
-            (Direction::Up, Some(Room::SplitterHorizontal)) => vec![
-                Movement(self.0, Direction::Left),
-                Movement(self.0, Direction::Right),
-            ],
-            (Direction::Down, Some(Room::SplitterHorizontal)) => vec![
-                Movement(self.0, Direction::Left),
-                Movement(self.0, Direction::Right),
-            ],
-            (Direction::Left, Some(Room::SplitterVertical)) => vec![
-                Movement(self.0, Direction::Up),
-                Movement(self.0, Direction::Down),
-            ],
-            (Direction::Right, Some(Room::SplitterVertical)) => vec![
-                Movement(self.0, Direction::Up),
-                Movement(self.0, Direction::Down),
-            ],
-            (Direction::Up, Some(Room::DiagonalForward)) => {
-                vec![Movement(self.0, Direction::Right)]
-            }
-            (Direction::Up, Some(Room::DiagonalBackward)) => {
-                vec![Movement(self.0, Direction::Left)]
-            }
-            (Direction::Down, Some(Room::DiagonalForward)) => {
-                vec![Movement(self.0, Direction::Left)]
-            }
-            (Direction::Down, Some(Room::DiagonalBackward)) => {
-                vec![Movement(self.0, Direction::Right)]
-            }
-            (Direction::Right, Some(Room::DiagonalForward)) => {
-                vec![Movement(self.0, Direction::Up)]
-            }
-            (Direction::Right, Some(Room::DiagonalBackward)) => {
-                vec![Movement(self.0, Direction::Down)]
-            }
-            (Direction::Left, Some(Room::DiagonalForward)) => {
-                vec![Movement(self.0, Direction::Down)]
-            }
-            (Direction::Left, Some(Room::DiagonalBackward)) => {
-                vec![Movement(self.0, Direction::Up)]
-            }
-        }
-    }
-}
-
 impl Day16 {
     fn room_at_point(&self, point: &Point2D) -> Option<Room> {
         if (0..self.layout.len() as isize).contains(&point.y)
@@ -111,28 +37,27 @@ impl Day16 {
         }
     }
 
-    fn room_at_movement(&self, movement: &Movement) -> Option<Room> {
-        self.room_at_point(&movement.0)
+    fn room_at_laser(&self, laser: &Laser) -> Option<Room> {
+        self.room_at_point(&laser.location)
     }
 
-    fn get_energy_for_starting_movement(&self, starting_movement: &Movement) -> usize {
-        let mut visited_movements: HashSet<Movement> = HashSet::new();
-        let mut movements = vec![*starting_movement];
-        while !movements.is_empty() {
-            movements = movements
+    fn get_energy_from_starting_laser(&self, starting_laser: &Laser) -> usize {
+        let mut visited_lasers: HashSet<Laser> = HashSet::new();
+        let mut lasers = vec![*starting_laser];
+        while !lasers.is_empty() {
+            lasers = lasers
                 .iter()
                 .map(|movement| movement.next_movement())
-                .flat_map(|movement| movement.next_direction(&self.room_at_movement(&movement)))
+                .flat_map(|movement| movement.next_direction(&self.room_at_laser(&movement)))
                 .collect();
-            movements.retain(|movement| !visited_movements.contains(movement));
-            visited_movements.extend(&movements);
+            lasers.retain(|movement| !visited_lasers.contains(movement));
+            visited_lasers.extend(&lasers);
         }
-        HashSet::<Point2D>::from_iter(visited_movements.into_iter().map(|movement| movement.0))
-            .len()
+        HashSet::<Point2D>::from_iter(visited_lasers.into_iter().map(|laser| laser.location)).len()
     }
 
     fn calculate_day_a(&self) -> usize {
-        self.get_energy_for_starting_movement(&Movement(Point2D { x: -1, y: 0 }, Direction::Right))
+        self.get_energy_from_starting_laser(&Laser::new(Point2D { x: -1, y: 0 }, Direction::Right))
     }
 
     #[allow(dead_code)]
@@ -154,17 +79,17 @@ impl Day16 {
         ret
     }
 
-    fn get_day_b_possible_starting_movements(&self) -> Vec<Movement> {
+    fn get_day_b_possible_starting_lasers(&self) -> Vec<Laser> {
         let mut ret = Vec::new();
         for y in 0..self.layout.len() {
-            ret.push(Movement(
+            ret.push(Laser::new(
                 Point2D {
                     x: -1,
                     y: y as isize,
                 },
                 Direction::Right,
             ));
-            ret.push(Movement(
+            ret.push(Laser::new(
                 Point2D {
                     x: self.layout[y].len() as isize,
                     y: y as isize,
@@ -173,14 +98,14 @@ impl Day16 {
             ));
         }
         for x in 0..self.layout[0].len() {
-            ret.push(Movement(
+            ret.push(Laser::new(
                 Point2D {
                     x: x as isize,
                     y: -1,
                 },
                 Direction::Down,
             ));
-            ret.push(Movement(
+            ret.push(Laser::new(
                 Point2D {
                     x: x as isize,
                     y: self.layout[0].len() as isize,
@@ -192,9 +117,9 @@ impl Day16 {
     }
 
     fn calculate_day_b(&self) -> usize {
-        self.get_day_b_possible_starting_movements()
+        self.get_day_b_possible_starting_lasers()
             .iter()
-            .map(|starting_movement| self.get_energy_for_starting_movement(starting_movement))
+            .map(|starting_movement| self.get_energy_from_starting_laser(starting_movement))
             .max()
             .unwrap_or(0)
     }

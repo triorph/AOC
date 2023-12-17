@@ -1,14 +1,6 @@
 extern crate peg;
+use crate::room::Room;
 use aoc_helpers::AOCFileOrParseError;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Room {
-    SplitterVertical,
-    SplitterHorizontal,
-    DiagonalForward,
-    DiagonalBackward,
-    Empty,
-}
 
 peg::parser! { pub grammar day16_parser() for str {
     rule number() -> usize
