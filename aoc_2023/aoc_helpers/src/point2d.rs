@@ -1,4 +1,7 @@
-use std::{fmt::Debug, ops::Add};
+use std::{
+    fmt::Debug,
+    ops::{Add, Mul},
+};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Point2D {
@@ -29,6 +32,17 @@ impl Add for Point2D {
         Point2D {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Mul<isize> for &Point2D {
+    type Output = Point2D;
+
+    fn mul(self, scalar: isize) -> Self::Output {
+        Point2D {
+            x: self.x * scalar,
+            y: self.y * scalar,
         }
     }
 }
