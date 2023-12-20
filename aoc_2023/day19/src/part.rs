@@ -57,7 +57,7 @@ impl PartRange {
         self.x.len() * self.m.len() * self.a.len() * self.s.len()
     }
 
-    fn clone_with_part(
+    pub fn clone_with_part(
         &self,
         part_category: PartCategory,
         range: Range<usize>,
@@ -70,7 +70,7 @@ impl PartRange {
                 ..self.clone()
             },
             PartCategory::M => PartRange {
-                x: range,
+                m: range,
                 target: target.to_string(),
                 ..self.clone()
             },
@@ -108,9 +108,9 @@ impl PartRange {
                 self.clone_with_part(part_category, value..range.end, upper_target),
             ]
         } else if value < range.start {
-            vec![self.clone_with_part(part_category, range, lower_target)]
-        } else {
             vec![self.clone_with_part(part_category, range, upper_target)]
+        } else {
+            vec![self.clone_with_part(part_category, range, lower_target)]
         }
     }
 }

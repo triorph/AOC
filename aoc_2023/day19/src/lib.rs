@@ -71,7 +71,6 @@ impl Day19 {
                 .flat_map(|range| self.get_next_range(&range))
                 .collect();
         }
-        println!("Got ranges: {:?}", ranges);
         ranges
     }
 
