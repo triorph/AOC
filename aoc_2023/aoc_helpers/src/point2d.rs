@@ -19,7 +19,25 @@ pub trait Neighbours {
     fn get_neighbours(&self) -> Vec<Point2D>;
 }
 
+impl Neighbours for Point2D {
+    fn get_neighbours(&self) -> Vec<Point2D> {
+        vec![
+            self + &Point2D { x: 0, y: -1 },
+            self + &Point2D { x: 0, y: 1 },
+            self + &Point2D { x: -1, y: 0 },
+            self + &Point2D { x: 1, y: 0 },
+        ]
+    }
+}
+
 impl Point2D {
+    pub fn from_usize(x: usize, y: usize) -> Point2D {
+        Point2D {
+            x: x as isize,
+            y: y as isize,
+        }
+    }
+
     pub fn get_manhattan_distance(&self, other: &Point2D) -> usize {
         ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
     }

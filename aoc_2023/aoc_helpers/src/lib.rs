@@ -2,6 +2,7 @@ use std::fs::read_to_string;
 pub mod hash_utils;
 pub mod modular_math;
 pub mod point2d;
+pub mod point3d;
 pub mod vec;
 
 #[derive(Debug)]
