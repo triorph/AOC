@@ -38,7 +38,7 @@ where
 
 impl<K, V> HashVec<K, V>
 where
-    K: Eq + Hash + Copy,
+    K: Eq + Hash + Clone,
     V: Clone,
 {
     pub fn new() -> HashVec<K, V> {
@@ -48,7 +48,7 @@ where
     }
 
     pub fn push(&mut self, key: K, val: V) {
-        self.place_empty(key);
+        self.place_empty(key.clone());
         self.inner.entry(key).and_modify(|v| v.push(val.clone()));
     }
 
@@ -60,13 +60,21 @@ where
         self.inner.keys()
     }
 
+    pub fn values(&self) -> std::collections::hash_map::Values<'_, K, Vec<V>> {
+        self.inner.values()
+    }
+
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, K, Vec<V>> {
+        self.inner.iter()
+    }
+
     pub fn get_mut(&mut self, key: &K) -> Option<&mut Vec<V>> {
-        self.place_empty(*key);
+        self.place_empty(key.clone());
         self.inner.get_mut(key)
     }
 
     pub fn extend(&mut self, key: K, values: &[V]) {
-        self.place_empty(key);
+        self.place_empty(key.clone());
         self.inner
             .entry(key)
             .and_modify(|v: &mut Vec<V>| v.extend(values.iter().cloned()));
@@ -74,5 +82,9 @@ where
 
     fn place_empty(&mut self, key: K) {
         self.inner.entry(key).or_insert_with(|| Vec::new());
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
     }
 }
