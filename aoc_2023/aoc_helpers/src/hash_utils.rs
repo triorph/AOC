@@ -64,6 +64,13 @@ where
         self.inner.values()
     }
 
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: FnMut(&K, &mut Vec<V>) -> bool,
+    {
+        self.inner.retain(f);
+    }
+
     pub fn iter(&self) -> std::collections::hash_map::Iter<'_, K, Vec<V>> {
         self.inner.iter()
     }
