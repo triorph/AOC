@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    ops::{Add, Mul},
+    ops::{Add, Mul, Sub},
 };
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
@@ -76,11 +76,23 @@ impl Mul<isize> for &Point3D {
 impl Add for &Point3D {
     type Output = Point3D;
 
-    fn add(self, other: &Point3D) -> Point3D {
+    fn add(self, rhs: &Point3D) -> Point3D {
         Point3D {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl Sub for &Point3D {
+    type Output = Point3D;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Point3D {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
         }
     }
 }
