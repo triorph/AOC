@@ -137,10 +137,64 @@ impl Day21 {
         ret
     }
 
+    #[allow(dead_code)]
+    fn print_garden_sizes(&self, garden: &HashMap<Point2D, HashSet<Point2D>>) -> String {
+        let min_x = garden
+            .iter()
+            .map(|(_, wraps)| wraps.iter().map(|w| w.x).min().unwrap_or(0))
+            .min()
+            .unwrap_or(0);
+        let max_x = garden
+            .iter()
+            .map(|(_, wraps)| wraps.iter().map(|w| w.x).max().unwrap_or(0))
+            .max()
+            .unwrap_or(0);
+        let min_y = garden
+            .iter()
+            .map(|(_, wraps)| wraps.iter().map(|w| w.y).min().unwrap_or(0))
+            .min()
+            .unwrap_or(0);
+        let max_y = garden
+            .iter()
+            .map(|(_, wraps)| wraps.iter().map(|w| w.y).max().unwrap_or(0))
+            .max()
+            .unwrap_or(0);
+        let mut ret = String::new();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                ret += &format!(
+                    "{: >3}",
+                    &garden
+                        .iter()
+                        .map(|(_, wraps)| wraps.iter().filter(|w| w.x == x && w.y == y).count())
+                        .sum::<usize>()
+                        .to_string()
+                );
+                ret += ","
+            }
+            ret += "\n";
+        }
+        ret
+    }
+
+    fn build_plot_counts(
+        &self,
+        garden: &HashMap<Point2D, HashSet<Point2D>>,
+    ) -> HashMap<Point2D, usize> {
+        let mut ret: HashMap<Point2D, usize> = HashMap::new();
+        for point_plots in garden.values() {
+            for plot in point_plots.iter() {
+                ret.entry(*plot).and_modify(|old| *old += 1).or_insert(1);
+            }
+        }
+        ret
+    }
+
     fn find_wrapped_plots_after_steps(&self, steps: usize) -> usize {
         let mut found: HashMap<Point2D, HashSet<Point2D>> = HashMap::new();
         found.insert(self.start, HashSet::from_iter([Point2D { x: 0, y: 0 }]));
-        for _ in 0..steps {
+        let mut plot_counts = self.build_plot_counts(&found);
+        for step in 0..steps {
             let mut next_found = HashMap::new();
             for (plot, wrap_locations) in found.iter() {
                 for (neighbour, neighbour_wrap_location) in plot
@@ -162,6 +216,14 @@ impl Day21 {
                         .extend(neighbour_wrap_locations);
                 }
             }
+            let next_plot_counts = self.build_plot_counts(&next_found);
+            if next_plot_counts.len() != plot_counts.len() {
+                println!("Opened up a new plot at iteration {:?} with {:?} plots open and {:?} steps total",
+                    step, next_plot_counts.len(), next_plot_counts.values().sum::<usize>()
+                );
+            }
+            plot_counts = next_plot_counts;
+            // println!("{}", self.print_garden_sizes(&next_found));
             found = next_found;
         }
         found
