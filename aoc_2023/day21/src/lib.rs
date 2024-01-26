@@ -41,6 +41,17 @@ impl AOCCalculator for Day21 {
         println!("{}b answer is {:?}", name, self.calculate_day_b());
     }
 }
+const CYCLE_INDICES: [Point2D; 9] = [
+    Point2D { x: -1, y: -1 },
+    Point2D { x: -1, y: 0 },
+    Point2D { x: -1, y: 1 },
+    Point2D { x: 0, y: -1 },
+    Point2D { x: 0, y: 0 },
+    Point2D { x: 0, y: 1 },
+    Point2D { x: 1, y: -1 },
+    Point2D { x: 1, y: 0 },
+    Point2D { x: 1, y: 1 },
+];
 
 impl Day21 {
     fn within_bounds(&self, point: &Point2D) -> bool {
@@ -177,6 +188,25 @@ impl Day21 {
         ret
     }
 
+    fn print_plot_counts(&self, garden: &HashMap<Point2D, usize>) -> String {
+        let min_x = garden.keys().map(|key| key.x).min().unwrap_or(0);
+        let max_x = garden.keys().map(|key| key.x).max().unwrap_or(0);
+        let min_y = garden.keys().map(|key| key.y).min().unwrap_or(0);
+        let max_y = garden.keys().map(|key| key.y).max().unwrap_or(0);
+        let mut ret = String::new();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                ret += &format!(
+                    "{: >3}",
+                    &garden.get(&Point2D { x, y }).unwrap_or(&0).to_string()
+                );
+                ret += ","
+            }
+            ret += "\n";
+        }
+        ret
+    }
+
     fn build_plot_counts(
         &self,
         garden: &HashMap<Point2D, HashSet<Point2D>>,
@@ -190,11 +220,47 @@ impl Day21 {
         ret
     }
 
+    fn find_cycle(&self, counts: &[usize]) -> Option<usize> {
+        let latest = counts[counts.len() - 1];
+        if latest != 0 && counts.iter().filter(|c| **c == latest).count() > 1 {
+            Some(
+                counts
+                    .iter()
+                    .enumerate()
+                    .find(|(_, c)| **c == latest)
+                    .map(|(i, _)| i)
+                    .unwrap()
+                    - counts
+                        .iter()
+                        .enumerate()
+                        .find(|(_, c)| **c != 0)
+                        .map(|(i, _)| i)
+                        .unwrap(),
+            )
+        } else {
+            None
+        }
+    }
+
+    fn normalise_expansion_point(&self, point: &Point2D) -> Point2D {
+        Point2D {
+            x: if point.x == 0 { 0 } else { point.x.signum() },
+            y: if point.y == 0 { 0 } else { point.y.signum() },
+        }
+    }
+
     fn find_wrapped_plots_after_steps(&self, steps: usize) -> usize {
         let mut found: HashMap<Point2D, HashSet<Point2D>> = HashMap::new();
         found.insert(self.start, HashSet::from_iter([Point2D { x: 0, y: 0 }]));
         let mut plot_counts = self.build_plot_counts(&found);
-        for step in 0..steps {
+        let mut cycles = vec![vec![]; 9];
+        let mut expansion_times = vec![vec![]; 9];
+        let mut cycle_indices_map: HashMap<Point2D, usize> = HashMap::new();
+        for (i, index) in CYCLE_INDICES.iter().enumerate() {
+            cycle_indices_map.insert(*index, i);
+        }
+        let mut cycles_found = false;
+        for step in 0..100 {
             let mut next_found = HashMap::new();
             for (plot, wrap_locations) in found.iter() {
                 for (neighbour, neighbour_wrap_location) in plot
@@ -221,15 +287,125 @@ impl Day21 {
                 println!("Opened up a new plot at iteration {:?} with {:?} plots open and {:?} steps total",
                     step, next_plot_counts.len(), next_plot_counts.values().sum::<usize>()
                 );
+                let all_new_keys: HashSet<Point2D> =
+                    HashSet::from_iter(next_plot_counts.keys().copied());
+                let all_old_keys: HashSet<Point2D> =
+                    HashSet::from_iter(plot_counts.keys().copied());
+
+                let new_keys = all_new_keys.difference(&all_old_keys);
+                let normalised_new_keys = new_keys
+                    .into_iter()
+                    .map(|point| self.normalise_expansion_point(point))
+                    .collect::<HashSet<Point2D>>();
+                for key in normalised_new_keys.into_iter() {
+                    let index = cycle_indices_map.get(&key).unwrap();
+                    expansion_times[*index].push(step);
+                }
+            }
+            if !cycles_found {
+                for i in 0..9 {
+                    cycles[i].push(*next_plot_counts.get(&CYCLE_INDICES[i]).unwrap_or(&0));
+                }
+            }
+            if !cycles_found && cycles.iter().all(|cycle| self.find_cycle(cycle).is_some()) {
+                cycles_found = true;
+                println!(
+                    "at time {} found all cycle for plot {:?} -\n {}",
+                    step,
+                    cycles,
+                    self.print_garden_sizes(&next_found)
+                );
             }
             plot_counts = next_plot_counts;
-            // println!("{}", self.print_garden_sizes(&next_found));
             found = next_found;
         }
+        let plots = self.predict_plots(100, cycles.clone(), expansion_times.clone());
+        for plot in plot_counts.keys() {
+            assert_eq!(
+                plots.get(plot).unwrap_or(&0),
+                plot_counts.get(plot).unwrap_or(&0)
+            )
+        }
+
         found
             .values()
             .map(|wrap_locations| wrap_locations.len())
             .sum()
+    }
+
+    fn get_all_points_at_distance(&self, point: &Point2D, distance: usize) -> Vec<Point2D> {
+        if point.x.abs() + point.y.abs() == 1 {
+            vec![point * distance as isize]
+        } else {
+            // assume diagonal
+            let ret = (0..(distance as isize))
+                .map(|offset| Point2D {
+                    x: point.x * distance as isize - offset * point.x.signum(),
+                    y: point.y * distance as isize
+                        - (distance as isize - 1 - offset) * point.y.signum(),
+                })
+                .collect();
+            println!(
+                "Diagonal points at distance {:?} for point {:?} are {:?}",
+                distance, point, ret
+            );
+            ret
+        }
+    }
+
+    fn predict_plots(
+        &self,
+        step: usize,
+        cycles: Vec<Vec<usize>>,
+        expansion_times: Vec<Vec<usize>>,
+    ) -> HashMap<Point2D, usize> {
+        let mut ret = HashMap::new();
+        let origin = Point2D { x: 0, y: 0 };
+        for ((cycle_point, cycle), expansions) in CYCLE_INDICES
+            .iter()
+            .zip(cycles.iter())
+            .zip(expansion_times.iter())
+        {
+            println!("cycle {:?}: {:?}", cycle_point, cycle);
+            println!("Expansion times for this type: {:?}", expansions);
+            let time_until_zero = cycle
+                .iter()
+                .enumerate()
+                .find(|(_, c)| **c != 0)
+                .map(|(i, _)| i)
+                .unwrap();
+            let mut distance = 1;
+            let cycle_len = self.find_cycle(cycle).unwrap();
+            let mut count = cycle[cycle_len + time_until_zero];
+            while count != 0 {
+                for point in self
+                    .get_all_points_at_distance(cycle_point, distance)
+                    .into_iter()
+                {
+                    ret.insert(point, count);
+                }
+                distance += 1;
+                if *cycle_point == origin {
+                    break;
+                }
+
+                if time_until_zero * distance > step + cycle_len {
+                    count = 0;
+                } else if time_until_zero * distance < time_until_zero + cycle_len {
+                    let cycle_index = if step > time_until_zero * distance + cycle_len {
+                        time_until_zero + cycle_len
+                    } else {
+                        1
+                    };
+                    count = cycle[cycle_index];
+                } else {
+                    count = 0;
+                }
+            }
+        }
+        println!("Worked out cycles: {:?}", ret);
+        println!("Looks like:\n{}", self.print_plot_counts(&ret));
+        ret
     }
 
     fn calculate_day_a(&self) -> usize {
