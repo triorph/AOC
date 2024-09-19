@@ -1,0 +1,9 @@
+{
+    "tspegjs": {
+        "customHeader": "// import structures\nimport {Game, Round} from './day02';"
+    },
+    "returnTypes": {
+        "G": "Game",
+        "R": "Round"
+    }
+}
