@@ -1,0 +1,9 @@
+{
+    "tspegjs": {
+        "customHeader": "// import structures\nimport {Card} from './day04';",
+        "doNotCamelCaseTypes": true
+    },
+    "returnTypes": {
+        "card": "Card"
+    }
+}
