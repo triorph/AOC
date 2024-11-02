@@ -23,104 +23,143 @@ defmodule Day03 do
     defstruct [:location, :value]
   end
 
-  def get_digit_or_null(char) do
-    ret = Integer.parse(char)
+  defmodule GridObjectListBuilder do
+    defstruct current_value: nil, start_location: nil, grid_objects: [], previous_location: nil
 
-    case ret do
-      {number, _} -> number
-      :error -> nil
+    def get_digit_or_null(char) do
+      ret = Integer.parse(char)
+
+      case ret do
+        {number, _} -> number
+        :error -> nil
+      end
+    end
+
+    def finish_number(%GridObjectListBuilder{} = state) do
+      grid_objects =
+        List.insert_at(state.grid_objects, -1, %GridObject{
+          location: %Location{
+            start: state.start_location,
+            end: state.previous_location
+          },
+          value: %Number{number: state.current_value}
+        })
+
+      Map.merge(state, %{
+        :grid_objects => grid_objects,
+        :current_value => nil,
+        :start_location => nil
+      })
+    end
+
+    def maybe_finish_number(
+          {%Point{} = this_location, _},
+          %GridObjectListBuilder{} = state,
+          char_num
+        ) do
+      if state.current_value != nil &&
+           (char_num == nil || this_location.y != state.start_location.y) do
+        finish_number(state)
+      else
+        state
+      end
+    end
+
+    def create_number(
+          {%Point{} = this_location, _},
+          %GridObjectListBuilder{} = state,
+          char_num
+        ) do
+      Map.merge(state, %{:current_value => char_num, :start_location => this_location})
+    end
+
+    def increase_number(%GridObjectListBuilder{} = state, char_num) do
+      Map.merge(state, %{:current_value => state.current_value * 10 + char_num})
+    end
+
+    def increase_or_create_number(
+          {%Point{}, _} = data_point,
+          %GridObjectListBuilder{} = state,
+          char_num
+        ) do
+      if state.current_value == nil do
+        create_number(data_point, state, char_num)
+      else
+        increase_number(state, char_num)
+      end
+    end
+
+    def maybe_add_symbol(
+          {%Point{} = this_location, char},
+          %GridObjectListBuilder{} = state
+        ) do
+      grid_objects =
+        if char != "." do
+          List.insert_at(state.grid_objects, -1, %GridObject{
+            location: %Location{start: this_location, end: this_location},
+            value: %Symbol{symbol: char}
+          })
+        else
+          state.grid_objects
+        end
+
+      Map.put(state, :grid_objects, grid_objects)
+    end
+
+    def increase_number_or_add_symbol(
+          {%Point{}, _} = data_point,
+          %GridObjectListBuilder{} = state,
+          char_num
+        ) do
+      if !is_nil(char_num) do
+        increase_or_create_number(data_point, state, char_num)
+      else
+        maybe_add_symbol(data_point, state)
+      end
+    end
+
+    def assemble_grid_objects(
+          {%Point{} = this_location, char} = data_point,
+          %GridObjectListBuilder{} = state
+        ) do
+      char_num = get_digit_or_null(char)
+      state = maybe_finish_number(data_point, state, char_num)
+      state = increase_number_or_add_symbol(data_point, state, char_num)
+
+      Map.merge(state, %{:previous_location => this_location})
     end
   end
 
-  def assemble_grid_objects(
-        {%Point{} = this_location, char},
-        %{
-          :current_value => current_value,
-          :start_location => start_location,
-          :previous_location => previous_location,
-          :grid_objects => grid_objects
-        }
-      ) do
-    char_num = get_digit_or_null(char)
-
-    {grid_objects, current_value, start_location} =
-      if current_value != nil && (char_num == nil || this_location.y != start_location.y) do
-        grid_objects =
-          List.insert_at(grid_objects, -1, %GridObject{
-            location: %Location{
-              start: start_location,
-              end: %Point{x: previous_location.x, y: previous_location.y}
-            },
-            value: %Number{number: current_value}
-          })
-
-        current_value = nil
-        start_location = nil
-        {grid_objects, current_value, start_location}
-      else
-        {grid_objects, current_value, start_location}
-      end
-
-    {grid_objects, current_value, start_location} =
-      if !is_nil(char_num) do
-        {current_value, start_location} =
-          if current_value == nil do
-            current_value = char_num
-            start_location = this_location
-            {current_value, start_location}
-          else
-            current_value = current_value * 10 + char_num
-            {current_value, start_location}
-          end
-
-        {grid_objects, current_value, start_location}
-      else
-        grid_objects =
-          if char != "." do
-            List.insert_at(grid_objects, -1, %GridObject{
-              location: %Location{start: this_location, end: this_location},
-              value: %Symbol{symbol: char}
-            })
-          else
-            grid_objects
-          end
-
-        {grid_objects, current_value, start_location}
-      end
-
-    %{
-      :current_value => current_value,
-      :start_location => start_location,
-      :grid_objects => grid_objects,
-      :previous_location => this_location
-    }
+  def get_characters_and_locations(lines) do
+    Enum.with_index(lines)
+    |> Enum.map(fn {line, y} ->
+      Enum.with_index(String.graphemes(line))
+      |> Enum.map(fn {char, x} -> {%Point{x: x, y: y}, char} end)
+    end)
+    |> List.flatten()
   end
 
   def parse_lines(lines) do
-    initial_state = %{
-      :current_value => nil,
-      :start_location => nil,
-      :grid_objects => [],
-      :previous_location => nil
-    }
+    data_points = get_characters_and_locations(lines)
 
-    data_points =
-      Enum.with_index(lines)
-      |> Enum.map(fn {line, y} ->
-        Enum.with_index(String.graphemes(line))
-        |> Enum.map(fn {char, x} -> {%Point{x: x, y: y}, char} end)
-      end)
-      |> List.flatten()
+    %GridObjectListBuilder{} =
+      state =
+      Enum.reduce(
+        data_points,
+        %GridObjectListBuilder{},
+        &GridObjectListBuilder.assemble_grid_objects/2
+      )
 
-    %{:grid_objects => grid_objects} =
-      Enum.reduce(data_points, initial_state, &assemble_grid_objects/2)
-
-    grid_objects
+    state.grid_objects
   end
 
-  def is_adjacent?(%GridObject{location: %Location{start: num_start, end: num_end}}, %GridObject{
-        location: %Location{start: symbol_pos}
-      }) do
+  def is_adjacent?(
+        %GridObject{location: %Location{start: num_start, end: num_end}, value: %Number{}},
+        %GridObject{
+          location: %Location{start: symbol_pos},
+          value: %Symbol{}
+        }
+      ) do
     symbol_pos.x >= num_start.x - 1 && symbol_pos.x <= num_end.x + 1 &&
       symbol_pos.y >= num_start.y - 1 && symbol_pos.y <= num_start.y + 1
   end
