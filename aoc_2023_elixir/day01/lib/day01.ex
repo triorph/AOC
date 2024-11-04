@@ -18,7 +18,7 @@ defmodule Day01 do
       nil
 
   """
-  def get_digit_of_first_char(candidate) do
+  def get_digit_of_first_char(candidate) when is_binary(candidate) do
     ret = Integer.parse(String.slice(candidate, 0..0))
 
     case ret do
@@ -38,13 +38,23 @@ defmodule Day01 do
     nil
   """
 
-  def get_number_from_start_word(candidate) do
-    numbers = %{one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9}
+  def get_number_from_start_word(candidate) when is_binary(candidate) do
+    numbers = %{
+      "one" => 1,
+      "two" => 2,
+      "three" => 3,
+      "four" => 4,
+      "five" => 5,
+      "six" => 6,
+      "seven" => 7,
+      "eight" => 8,
+      "nine" => 9
+    }
 
     {ret, _} =
       numbers
       |> Enum.map(fn {key, val} ->
-        if String.starts_with?(candidate, Atom.to_string(key)) do
+        if String.starts_with?(candidate, key) do
           val
         else
           nil
@@ -59,7 +69,7 @@ defmodule Day01 do
   @doc """
   Works out the calibration value for a line for part A
   """
-  def day_a_calibration_value(input) do
+  def day_a_calibration_value(input) when is_binary(input) do
     set_value = fn candidate, {first, last} ->
       candidate_number = get_digit_of_first_char(candidate)
 
@@ -81,7 +91,7 @@ defmodule Day01 do
   @doc """
   Works out if the string's start is either a number word or a digit, and return the appropriate integer (or nil if neither)
   """
-  def day_b_digit(candidate) do
+  def day_b_digit(candidate) when is_binary(candidate) do
     case {get_digit_of_first_char(candidate), get_number_from_start_word(candidate)} do
       {nil, nil} -> nil
       {digit, nil} -> digit
@@ -92,7 +102,7 @@ defmodule Day01 do
   @doc """
   Works out the calibration value for a line in part b
   """
-  def day_b_calibration_value(input) do
+  def day_b_calibration_value(input) when is_binary(input) do
     set_value = fn candidate, {first, last} ->
       candidate_number = day_b_digit(candidate)
 
@@ -114,7 +124,7 @@ defmodule Day01 do
   @doc """
   Works out the sum of all calibration values for part A on the lines of data
   """
-  def day_a_lines(lines) do
+  def day_a_lines(lines) when is_list(lines) do
     lines
     |> Enum.filter(fn x -> String.trim(x) != "" end)
     |> Enum.map(fn x -> day_a_calibration_value(x) end)
@@ -124,7 +134,7 @@ defmodule Day01 do
   @doc """
   Reads the file and does the part A calculation on its contents
   """
-  def day_a(filepath) do
+  def day_a(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_a_lines(String.split(data, "\n"))
       {:error, _} -> 0
@@ -134,7 +144,7 @@ defmodule Day01 do
   @doc """
   Works out the sum of all calibration values for part B on the lines of data
   """
-  def day_b_lines(lines) do
+  def day_b_lines(lines) when is_list(lines) do
     lines
     |> Enum.filter(fn x -> String.trim(x) != "" end)
     |> Enum.map(fn x -> day_b_calibration_value(x) end)
@@ -144,7 +154,7 @@ defmodule Day01 do
   @doc """
   Reads the file and does the part B calculation on its contents
   """
-  def day_b(filepath) do
+  def day_b(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_b_lines(String.split(data, "\n"))
       {:error, _} -> 0

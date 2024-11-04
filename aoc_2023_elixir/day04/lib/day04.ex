@@ -3,7 +3,7 @@ defmodule Day04 do
   Documentation for `Day04`.
   """
 
-  def get_numbers_as_map_set(number_str) do
+  def get_numbers_as_map_set(number_str) when is_binary(number_str) do
     number_str
     |> String.split(" ")
     |> Enum.map(&Integer.parse/1)
@@ -12,7 +12,7 @@ defmodule Day04 do
     |> MapSet.new()
   end
 
-  def parse_line(line) do
+  def parse_line(line) when is_binary(line) do
     [_, numbers | _] = String.split(line, ":")
     [left, right | _] = String.split(numbers, "|")
     {get_numbers_as_map_set(left), get_numbers_as_map_set(right)}
@@ -25,7 +25,7 @@ defmodule Day04 do
     end
   end
 
-  def day_a_lines(lines) do
+  def day_a_lines(lines) when is_list(lines) do
     lines
     |> Enum.filter(fn line -> String.trim(line) != "" end)
     |> Enum.map(&parse_line/1)
@@ -33,7 +33,7 @@ defmodule Day04 do
     |> Enum.reduce(fn x, acc -> x + acc end)
   end
 
-  def day_b_lines(lines) do
+  def day_b_lines(lines) when is_list(lines) do
     cards =
       lines
       |> Enum.filter(fn line -> String.trim(line) != "" end)
@@ -55,14 +55,14 @@ defmodule Day04 do
     |> Enum.reduce(0, fn {_, value}, acc -> value + acc end)
   end
 
-  def day_a(filepath) do
+  def day_a(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_a_lines(String.split(data, "\n"))
       _ -> 0
     end
   end
 
-  def day_b(filepath) do
+  def day_b(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_b_lines(String.split(data, "\n"))
       _ -> 0

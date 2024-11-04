@@ -26,7 +26,7 @@ defmodule Day03 do
   defmodule GridObjectListBuilder do
     defstruct current_value: nil, start_location: nil, grid_objects: [], previous_location: nil
 
-    def get_digit_or_null(char) do
+    def get_digit_or_null(char) when is_binary(char) do
       ret = Integer.parse(char)
 
       case ret do
@@ -56,7 +56,8 @@ defmodule Day03 do
           {%Point{} = this_location, _},
           %GridObjectListBuilder{} = state,
           char_num
-        ) do
+        )
+        when is_integer(char_num) or is_nil(char_num) do
       if state.current_value != nil &&
            (char_num == nil || this_location.y != state.start_location.y) do
         finish_number(state)
@@ -69,11 +70,13 @@ defmodule Day03 do
           {%Point{} = this_location, _},
           %GridObjectListBuilder{} = state,
           char_num
-        ) do
+        )
+        when is_integer(char_num) do
       Map.merge(state, %{:current_value => char_num, :start_location => this_location})
     end
 
-    def increase_number(%GridObjectListBuilder{} = state, char_num) do
+    def increase_number(%GridObjectListBuilder{} = state, char_num)
+        when is_integer(char_num) do
       Map.merge(state, %{:current_value => state.current_value * 10 + char_num})
     end
 
@@ -81,7 +84,8 @@ defmodule Day03 do
           {%Point{}, _} = data_point,
           %GridObjectListBuilder{} = state,
           char_num
-        ) do
+        )
+        when is_integer(char_num) do
       if state.current_value == nil do
         create_number(data_point, state, char_num)
       else
@@ -110,7 +114,8 @@ defmodule Day03 do
           {%Point{}, _} = data_point,
           %GridObjectListBuilder{} = state,
           char_num
-        ) do
+        )
+        when is_integer(char_num) or is_nil(char_num) do
       if !is_nil(char_num) do
         increase_or_create_number(data_point, state, char_num)
       else
@@ -130,7 +135,7 @@ defmodule Day03 do
     end
   end
 
-  def get_characters_and_locations(lines) do
+  def get_characters_and_locations(lines) when is_list(lines) do
     Enum.with_index(lines)
     |> Enum.map(fn {line, y} ->
       Enum.with_index(String.graphemes(line))
@@ -139,7 +144,7 @@ defmodule Day03 do
     |> List.flatten()
   end
 
-  def parse_lines(lines) do
+  def parse_lines(lines) when is_list(lines) do
     data_points = get_characters_and_locations(lines)
 
     %GridObjectListBuilder{} =
@@ -164,7 +169,7 @@ defmodule Day03 do
       symbol_pos.y >= num_start.y - 1 && symbol_pos.y <= num_start.y + 1
   end
 
-  def day_a_lines(lines) do
+  def day_a_lines(lines) when is_list(lines) do
     grid_objects = lines |> Enum.filter(fn x -> String.trim(x) != "" end) |> parse_lines()
     grid_symbols = Enum.filter(grid_objects, fn x -> match?(%{value: %Symbol{}}, x) end)
     grid_numbers = Enum.filter(grid_objects, fn x -> match?(%{value: %Number{}}, x) end)
@@ -177,14 +182,14 @@ defmodule Day03 do
     |> Enum.reduce(0, fn x, acc -> x + acc end)
   end
 
-  def day_a(filepath) do
+  def day_a(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_a_lines(String.split(data, "\n"))
       {:error, _} -> 0
     end
   end
 
-  def day_b_lines(lines) do
+  def day_b_lines(lines) when is_list(lines) do
     grid_objects = lines |> Enum.filter(fn x -> String.trim(x) != "" end) |> parse_lines()
     grid_numbers = Enum.filter(grid_objects, fn x -> match?(%{value: %Number{}}, x) end)
 
@@ -204,7 +209,7 @@ defmodule Day03 do
     |> Enum.reduce(0, fn x, acc -> x + acc end)
   end
 
-  def day_b(filepath) do
+  def day_b(filepath) when is_binary(filepath) do
     case File.read(filepath) do
       {:ok, data} -> day_b_lines(String.split(data, "\n"))
       {:error, _} -> 0
