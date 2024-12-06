@@ -1,5 +1,5 @@
 [package]
-name = "day6"
+name = "day7"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,4 +10,3 @@ peg = "0.8.2"
 aoc_helpers = { path = "../aoc_helpers" }
 color-eyre = "0.6.2"
 pretty_assertions = "1.4.0"
-itertools = "0.13.0"
