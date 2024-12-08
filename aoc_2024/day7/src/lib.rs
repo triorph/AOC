@@ -4,7 +4,7 @@ use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day7 {
-    data: Vec<usize>,
+    data: Vec<(isize, Vec<isize>)>,
 }
 
 impl AOCCalculator for Day7 {
@@ -21,12 +21,68 @@ impl AOCCalculator for Day7 {
 }
 
 impl Day7 {
-    fn calculate_day_a(&self) -> usize {
-        0
+    fn is_line_true_a(&self, target: isize, current: isize, remaining: &[isize]) -> bool {
+        if current == target && remaining.is_empty() {
+            true
+        } else if current > target || remaining.is_empty() {
+            false
+        } else {
+            self.is_line_true_a(
+                target,
+                current * remaining[0],
+                &remaining[1..remaining.len()],
+            ) || self.is_line_true_a(
+                target,
+                current + remaining[0],
+                &remaining[1..remaining.len()],
+            )
+        }
+    }
+    fn calculate_day_a(&self) -> isize {
+        self.data
+            .iter()
+            .filter(|(target, numbers)| {
+                self.is_line_true_a(*target, numbers[0], &numbers[1..numbers.len()])
+            })
+            .map(|(target, _)| target)
+            .sum()
     }
 
-    fn calculate_day_b(&self) -> usize {
-        0
+    fn concat(&self, a: isize, b: isize) -> isize {
+        let concat_str = format!("{}{}", a.to_string(), b.to_string());
+        str::parse(&concat_str).expect("Numbers will concat to a parseable string")
+    }
+
+    fn is_line_true_b(&self, target: isize, current: isize, remaining: &[isize]) -> bool {
+        if current == target && remaining.is_empty() {
+            true
+        } else if current > target || remaining.is_empty() {
+            false
+        } else {
+            self.is_line_true_b(
+                target,
+                self.concat(current, remaining[0]),
+                &remaining[1..remaining.len()],
+            ) || self.is_line_true_b(
+                target,
+                current * remaining[0],
+                &remaining[1..remaining.len()],
+            ) || self.is_line_true_b(
+                target,
+                current + remaining[0],
+                &remaining[1..remaining.len()],
+            )
+        }
+    }
+
+    fn calculate_day_b(&self) -> isize {
+        self.data
+            .iter()
+            .filter(|(target, numbers)| {
+                self.is_line_true_b(*target, numbers[0], &numbers[1..numbers.len()])
+            })
+            .map(|(target, _)| target)
+            .sum()
     }
 }
 
@@ -38,7 +94,7 @@ mod tests {
     #[test]
     fn test_calculate_day_a() {
         let day7 = Day7::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 3749;
         let actual = day7.calculate_day_a();
         assert_eq!(expected, actual);
     }
@@ -46,7 +102,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day7 = Day7::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 11387;
         let actual = day7.calculate_day_b();
         assert_eq!(expected, actual);
     }
@@ -54,7 +110,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_a() {
         let day7 = Day7::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 5540634308362;
         let actual = day7.calculate_day_a();
         assert_eq!(expected, actual);
     }
@@ -62,7 +118,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day7 = Day7::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 472290821152397;
         let actual = day7.calculate_day_b();
         assert_eq!(expected, actual);
     }
