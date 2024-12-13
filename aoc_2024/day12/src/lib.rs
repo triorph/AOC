@@ -146,22 +146,14 @@ impl Day12 {
 
     fn calculate_number_sides(&self, plot: &HashSet<Point2D>) -> usize {
         // hack: num sides = num corners
-        let ret = plot
-            .iter()
+        plot.iter()
             .map(|plot_point| {
                 self.get_corners()
                     .into_iter()
                     .filter(|corners| self.corner_checks(plot, plot_point, corners))
                     .count()
             })
-            .sum();
-        println!(
-            "Plot {:?} {:?} has corners {:?}",
-            self.get_plant(plot.iter().next().unwrap()),
-            plot,
-            ret
-        );
-        ret
+            .sum()
     }
 
     fn calculate_area(&self, plot: &HashSet<Point2D>) -> usize {
