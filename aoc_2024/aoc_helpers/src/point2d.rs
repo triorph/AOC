@@ -1,9 +1,9 @@
 use std::{
     fmt::Debug,
-    ops::{Add, Mul},
+    ops::{Add, Mul, Sub},
 };
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub struct Point2D {
     pub x: isize,
     pub y: isize,
@@ -54,6 +54,17 @@ impl Add for Point2D {
     }
 }
 
+impl Sub for Point2D {
+    type Output = Point2D;
+
+    fn sub(self, other: Point2D) -> Point2D {
+        Point2D {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
 impl Mul<isize> for &Point2D {
     type Output = Point2D;
 
@@ -72,6 +83,17 @@ impl Add for &Point2D {
         Point2D {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for &Point2D {
+    type Output = Point2D;
+
+    fn sub(self, other: &Point2D) -> Point2D {
+        Point2D {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }
