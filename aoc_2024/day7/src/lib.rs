@@ -21,17 +21,17 @@ impl AOCCalculator for Day7 {
 }
 
 impl Day7 {
-    fn is_line_true_a(&self, target: isize, current: isize, remaining: &[isize]) -> bool {
+    fn is_line_true_a(target: isize, current: isize, remaining: &[isize]) -> bool {
         if current == target && remaining.is_empty() {
             true
         } else if current > target || remaining.is_empty() {
             false
         } else {
-            self.is_line_true_a(
+            Day7::is_line_true_a(
                 target,
                 current * remaining[0],
                 &remaining[1..remaining.len()],
-            ) || self.is_line_true_a(
+            ) || Day7::is_line_true_a(
                 target,
                 current + remaining[0],
                 &remaining[1..remaining.len()],
@@ -42,14 +42,14 @@ impl Day7 {
         self.data
             .iter()
             .filter(|(target, numbers)| {
-                self.is_line_true_a(*target, numbers[0], &numbers[1..numbers.len()])
+                Day7::is_line_true_a(*target, numbers[0], &numbers[1..numbers.len()])
             })
             .map(|(target, _)| target)
             .sum()
     }
 
     fn concat(&self, a: isize, b: isize) -> isize {
-        let concat_str = format!("{}{}", a.to_string(), b.to_string());
+        let concat_str = format!("{}{}", a, b);
         str::parse(&concat_str).expect("Numbers will concat to a parseable string")
     }
 
