@@ -308,12 +308,7 @@ impl Day21 {
             .collect::<Vec<Vec<Vec<Direction>>>>();
         let mut indexer = vec![0; to_combine.len()];
         let mut ret = vec![];
-        let to_combine_len = to_combine
-            .iter()
-            .map(|options| options.len())
-            .product::<usize>();
 
-        println!("{:?}", to_combine_len);
         loop {
             let next = to_combine
                 .iter()
@@ -379,6 +374,7 @@ impl Day21 {
         number_map: &HashMap<(usize, usize), Vec<Vec<Direction>>>,
         direction_map: &HashMap<(Direction, Direction), Vec<Vec<Direction>>>,
         line: &[usize],
+        additional_runs: usize,
     ) -> usize {
         let activated_line = vec![10].concat(line.to_vec()).concat(vec![10]);
         println!("Line starts as {:?}", activated_line);
@@ -398,11 +394,22 @@ impl Day21 {
             .into_iter()
             .flat_map(|d| self.calculate_day_a_line_direction_to_direction(direction_map, &d))
             .collect();
-        for dir in directions.iter() {
-            println!("final line is {:?}", self.print_directions(dir));
+        let min_len = directions.iter().map(|x| x.len()).min().unwrap();
+        let mut directions: Vec<Direction> =
+            directions.into_iter().find(|x| x.len() == min_len).unwrap();
+        for i in 0..additional_runs {
+            println!("In additional run {}", i);
+            let tmp_directions =
+                self.calculate_day_a_line_direction_to_direction(direction_map, &directions);
+            let min_len = tmp_directions.iter().map(|x| x.len()).min().unwrap();
+            directions = tmp_directions
+                .into_iter()
+                .find(|x| x.len() == min_len)
+                .unwrap();
         }
-        line.iter().fold(0, |acc, x| acc * 10 + x)
-            * directions.iter().map(|d| d.len() - 1).min().unwrap()
+
+        println!("final line is {:?}", self.print_directions(&directions));
+        line.iter().fold(0, |acc, x| acc * 10 + x) * (directions.len() - 1)
     }
 
     fn calculate_day_a(&self) -> usize {
@@ -410,12 +417,17 @@ impl Day21 {
         let direction_map = self.find_directions_for_each_direction();
         self.data
             .iter()
-            .map(|line| self.calculate_day_a_line(&number_map, &direction_map, line))
+            .map(|line| self.calculate_day_a_line(&number_map, &direction_map, line, 0))
             .sum()
     }
 
     fn calculate_day_b(&self) -> usize {
-        0
+        let number_map = self.find_directions_for_each_number();
+        let direction_map = self.find_directions_for_each_direction();
+        self.data
+            .iter()
+            .map(|line| self.calculate_day_a_line(&number_map, &direction_map, line, 23))
+            .sum()
     }
 }
 
@@ -463,7 +475,7 @@ mod tests {
         ]
         .into_iter()
         {
-            let actual = day21.calculate_day_a_line(&number_map, &direction_map, &numbers);
+            let actual = day21.calculate_day_a_line(&number_map, &direction_map, &numbers, 0);
             println!("Path is  {:?}", path);
             assert_eq!(actual, expected);
         }
@@ -488,7 +500,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_a() {
         let day21 = Day21::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 278568;
         let actual = day21.calculate_day_a();
         assert_eq!(expected, actual);
     }
