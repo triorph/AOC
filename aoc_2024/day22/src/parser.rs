@@ -26,7 +26,7 @@ mod test {
     fn test_parse() {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let actual = day22_parser::parse(&input_str).expect("Should parse successfully");
-        let expected: Vec<usize> = vec![];
+        let expected: Vec<usize> = vec![1, 10, 100, 2024];
         assert_eq!(expected, actual)
     }
 }
