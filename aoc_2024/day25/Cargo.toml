@@ -10,3 +10,4 @@ peg = "0.8.2"
 aoc_helpers = { path = "../aoc_helpers" }
 color-eyre = "0.6.2"
 pretty_assertions = "1.4.0"
+itertools = "0.14.0"

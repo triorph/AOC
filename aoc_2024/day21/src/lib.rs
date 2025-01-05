@@ -2,7 +2,6 @@ mod parser;
 use std::{
     cmp::Reverse,
     collections::{BinaryHeap, HashMap, HashSet},
-    fmt::Display,
 };
 
 use crate::parser::parse_data;
