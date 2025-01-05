@@ -27,7 +27,6 @@ impl AOCCalculator for Day21 {
 }
 
 trait Location<T> {
-    fn get_as_point(&self) -> Point2D;
     fn get_location(&self) -> Point2D;
     fn get_all() -> Vec<T>;
 }
@@ -42,10 +41,6 @@ enum Direction {
 }
 
 impl Location<usize> for usize {
-    fn get_as_point(&self) -> Point2D {
-        panic!("Doesn't make sense on usize, shoudl I take this out of the trait?");
-    }
-
     fn get_location(&self) -> Point2D {
         match self {
             7 => Point2D { x: 0, y: 0 },
@@ -70,16 +65,6 @@ impl Location<usize> for usize {
 }
 
 impl Location<Direction> for Direction {
-    fn get_as_point(&self) -> Point2D {
-        match self {
-            Direction::Up => Point2D { x: 0, y: -1 },
-            Direction::Left => Point2D { x: -1, y: 0 },
-            Direction::Down => Point2D { x: 0, y: 1 },
-            Direction::Right => Point2D { x: 1, y: 0 },
-            _ => Point2D { x: 0, y: 0 },
-        }
-    }
-
     fn get_location(&self) -> Point2D {
         match self {
             Direction::Up => Point2D::from_usize(1, 0),
@@ -101,14 +86,14 @@ impl Location<Direction> for Direction {
     }
 }
 
-impl Display for Direction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Direction {
+    fn get_as_point(&self) -> Point2D {
         match self {
-            Direction::Right => write!(f, ">"),
-            Direction::Up => write!(f, "^"),
-            Direction::Left => write!(f, "<"),
-            Direction::Down => write!(f, "v"),
-            Direction::Activate => write!(f, "A"),
+            Direction::Up => Point2D { x: 0, y: -1 },
+            Direction::Left => Point2D { x: -1, y: 0 },
+            Direction::Down => Point2D { x: 0, y: 1 },
+            Direction::Right => Point2D { x: 1, y: 0 },
+            _ => Point2D { x: 0, y: 0 },
         }
     }
 }
@@ -119,18 +104,13 @@ trait ConcatVec<T> {
     fn concat(self, b: Vec<T>) -> Vec<T>;
 }
 
-impl ConcatVec<usize> for Vec<usize> {
-    fn concat(self, b: Vec<usize>) -> Vec<usize> {
+impl<T> ConcatVec<T> for Vec<T>
+where
+    T: Clone,
+{
+    fn concat(self, b: Vec<T>) -> Vec<T> {
         let mut ret = self.clone();
-        ret.extend(b.iter().cloned());
-        ret
-    }
-}
-
-impl ConcatVec<Direction> for Vec<Direction> {
-    fn concat(self, b: Vec<Direction>) -> Vec<Direction> {
-        let mut ret = self.clone();
-        ret.extend(b.iter().cloned());
+        ret.extend(b);
         ret
     }
 }
@@ -171,35 +151,26 @@ impl Day21 {
                     if !all_locations.contains(&next_point) {
                         continue;
                     }
-                    let cost = if path.is_empty() || path[path.len() - 1] == direction {
-                        distance + 1
-                    } else {
-                        distance + 1000
-                    };
+                    // let cost = if path.is_empty() || path[path.len() - 1] == direction {
+                    //     distance + 1
+                    // } else {
+                    //     distance + 1000
+                    // };
+                    let cost = distance + 1;
                     let mut neighbour_path = path.clone();
                     neighbour_path.push(direction);
                     to_explore.push(Reverse((cost, neighbour_path, next_point)))
                 }
             }
         }
-        let ret = best_paths
+        best_paths
             .get(&dest_point)
             .unwrap()
             .1
             .clone()
             .into_iter()
             .map(|d| d.concat(vec![Direction::Activate]))
-            .collect::<Vec<Vec<Direction>>>();
-        println!(
-            "Best path for {} to {} is {:?}",
-            source,
-            dest,
-            ret.iter()
-                .map(|d| self.print_directions(d))
-                .collect::<Vec<String>>()
-                .join("-")
-        );
-        ret
+            .collect::<Vec<Vec<Direction>>>()
     }
 
     fn find_directions_for_each_number(&self) -> HashMap<(usize, usize), Vec<Vec<Direction>>> {
@@ -252,36 +223,26 @@ impl Day21 {
                     if !all_locations.contains(&next_point) {
                         continue;
                     }
-                    let cost = if path.is_empty() || path[path.len() - 1] == direction {
-                        distance + 1
-                    } else {
-                        distance + 1000
-                    };
+                    // let cost = if path.is_empty() || path[path.len() - 1] == direction {
+                    //     distance + 1
+                    // } else {
+                    //     distance + 1000
+                    // };
+                    let cost = distance + 1;
                     let mut neighbour_path = path.clone();
                     neighbour_path.push(direction);
                     to_explore.push(Reverse((cost, neighbour_path, next_point)))
                 }
             }
         }
-        let ret = best_paths.get(&dest_point).unwrap().1.clone();
-        println!(
-            "Best path for {} to {} is {:?}",
-            source,
-            dest,
-            ret.iter()
-                .map(|d| self.print_directions(d))
-                .collect::<Vec<String>>()
-                .join("-")
-        );
-        ret
-    }
-
-    fn print_directions(&self, directions: &[Direction]) -> String {
-        directions
-            .iter()
-            .map(|d| d.to_string())
-            .collect::<Vec<String>>()
-            .join("")
+        best_paths
+            .get(&dest_point)
+            .unwrap()
+            .1
+            .clone()
+            .into_iter()
+            .map(|d| d.concat(vec![Direction::Activate]))
+            .collect()
     }
 
     fn find_directions_for_each_direction(
@@ -297,11 +258,12 @@ impl Day21 {
         ret
     }
 
-    fn calculate_day_a_line_number_to_direction(
+    fn calculate_line_number_to_directions(
         &self,
         number_map: &HashMap<(usize, usize), Vec<Vec<Direction>>>,
         line: &[usize],
     ) -> Vec<Vec<Direction>> {
+        // Finds all possible permutations of directions for a line number
         let to_combine = line
             .windows(2)
             .map(|input| number_map.get(&(input[0], input[1])).unwrap().clone())
@@ -313,9 +275,9 @@ impl Day21 {
             let next = to_combine
                 .iter()
                 .enumerate()
-                .flat_map(|(i, input)| vec![Direction::Activate].concat(input[indexer[i]].to_vec()))
+                .flat_map(|(i, input)| input[indexer[i]].to_vec())
                 .collect::<Vec<Direction>>();
-            ret.push(next);
+            ret.push(vec![Direction::Activate].concat(next));
             let mut tier = to_combine.len() - 1;
             indexer[tier] += 1;
 
@@ -330,86 +292,80 @@ impl Day21 {
             }
         }
     }
-    fn calculate_day_a_line_direction_to_direction(
-        &self,
+
+    fn get_direction_len(
         direction_map: &HashMap<(Direction, Direction), Vec<Vec<Direction>>>,
-        directions: &[Direction],
-    ) -> Vec<Vec<Direction>> {
-        let to_combine = directions
-            .windows(2)
-            .map(|input| direction_map.get(&(input[0], input[1])).unwrap().clone())
-            .collect::<Vec<Vec<Vec<Direction>>>>();
-        let mut indexer = vec![0; to_combine.len()];
-        let mut ret = vec![];
-        let to_combine_len = to_combine
-            .iter()
-            .map(|options| options.len())
-            .product::<usize>();
-
-        println!("{:?}", to_combine_len);
-        loop {
-            let next = to_combine
-                .iter()
-                .enumerate()
-                .flat_map(|(i, input)| vec![Direction::Activate].concat(input[indexer[i]].to_vec()))
-                .collect::<Vec<Direction>>();
-            ret.push(next);
-            let mut tier = to_combine.len() - 1;
-            indexer[tier] += 1;
-
-            while indexer[tier] == to_combine[tier].len() {
-                if tier == 0 {
-                    let min_len = ret.iter().map(|x| x.len()).min().unwrap();
-                    return ret.into_iter().filter(|x| x.len() == min_len).collect();
-                }
-                indexer[tier] = 0;
-                tier -= 1;
-                indexer[tier] += 1;
+        cached_results: &mut HashMap<(Direction, Direction, usize), usize>,
+        source: Direction,
+        dest: Direction,
+        depth: usize,
+        total_depth: usize,
+    ) -> usize {
+        // Finds the smallest length of all the options for a direction.
+        // Recursively goes deeper, and uses a hashmap to cache the results
+        if cached_results.contains_key(&(source, dest, depth)) {
+            return *cached_results.get(&(source, dest, depth)).unwrap();
+        }
+        let mut best_min = None;
+        for result in direction_map.get(&(source, dest)).unwrap().iter() {
+            let min = if depth == total_depth {
+                result.len()
+            } else {
+                vec![Direction::Activate]
+                    .concat(result.to_vec())
+                    .windows(2)
+                    .map(|vals| {
+                        Day21::get_direction_len(
+                            direction_map,
+                            cached_results,
+                            vals[0],
+                            vals[1],
+                            depth + 1,
+                            total_depth,
+                        )
+                    })
+                    .sum::<usize>()
+            };
+            if best_min.is_none() || best_min.is_some_and(|best_min| min < best_min) {
+                best_min = Some(min);
             }
         }
+        cached_results.insert((source, dest, depth), best_min.unwrap());
+        best_min.unwrap()
     }
 
-    fn calculate_day_a_line(
+    fn calculate_line(
         &self,
         number_map: &HashMap<(usize, usize), Vec<Vec<Direction>>>,
         direction_map: &HashMap<(Direction, Direction), Vec<Vec<Direction>>>,
         line: &[usize],
-        additional_runs: usize,
+        total_runs: usize,
     ) -> usize {
         let activated_line = vec![10].concat(line.to_vec()).concat(vec![10]);
-        println!("Line starts as {:?}", activated_line);
-        let directions = self.calculate_day_a_line_number_to_direction(number_map, &activated_line);
-        for dir in directions.iter() {
-            println!("first line is {:?}", self.print_directions(dir));
-        }
-        let directions: Vec<Vec<Direction>> = directions
-            .into_iter()
-            .flat_map(|d| self.calculate_day_a_line_direction_to_direction(direction_map, &d))
-            .collect();
-
-        for dir in directions.iter() {
-            println!("second line is {:?}", self.print_directions(dir));
-        }
-        let directions: Vec<Vec<Direction>> = directions
-            .into_iter()
-            .flat_map(|d| self.calculate_day_a_line_direction_to_direction(direction_map, &d))
-            .collect();
-        let min_len = directions.iter().map(|x| x.len()).min().unwrap();
-        let mut directions: Vec<Direction> =
-            directions.into_iter().find(|x| x.len() == min_len).unwrap();
-        for i in 0..additional_runs {
-            println!("In additional run {}", i);
-            let tmp_directions =
-                self.calculate_day_a_line_direction_to_direction(direction_map, &directions);
-            let min_len = tmp_directions.iter().map(|x| x.len()).min().unwrap();
-            directions = tmp_directions
-                .into_iter()
-                .find(|x| x.len() == min_len)
-                .unwrap();
-        }
-
-        println!("final line is {:?}", self.print_directions(&directions));
-        line.iter().fold(0, |acc, x| acc * 10 + x) * (directions.len() - 1)
+        let possible_directions =
+            self.calculate_line_number_to_directions(number_map, &activated_line);
+        let mut cached_results = HashMap::new();
+        let line_len = possible_directions
+            .iter()
+            .map(|directions| {
+                directions
+                    .windows(2)
+                    .map(|vals| {
+                        Day21::get_direction_len(
+                            direction_map,
+                            &mut cached_results,
+                            vals[0],
+                            vals[1],
+                            1,
+                            total_runs,
+                        )
+                    })
+                    .sum::<usize>()
+            })
+            .min()
+            .unwrap();
+        let number = line.iter().fold(0, |acc, x| acc * 10 + x);
+        line_len * number
     }
 
     fn calculate_day_a(&self) -> usize {
@@ -417,7 +373,7 @@ impl Day21 {
         let direction_map = self.find_directions_for_each_direction();
         self.data
             .iter()
-            .map(|line| self.calculate_day_a_line(&number_map, &direction_map, line, 0))
+            .map(|line| self.calculate_line(&number_map, &direction_map, line, 2))
             .sum()
     }
 
@@ -426,7 +382,7 @@ impl Day21 {
         let direction_map = self.find_directions_for_each_direction();
         self.data
             .iter()
-            .map(|line| self.calculate_day_a_line(&number_map, &direction_map, line, 23))
+            .map(|line| self.calculate_line(&number_map, &direction_map, line, 25))
             .sum()
     }
 }
@@ -435,19 +391,6 @@ impl Day21 {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-
-    // #[test]
-    // fn test_shortest_path_has_no_kinks() {
-    //     let day21 = Day21::new("data/test_data.txt").unwrap();
-    //     let expected = vec![
-    //         Direction::Down,
-    //         Direction::Left,
-    //         Direction::Left,
-    //         Direction::Activate,
-    //     ];
-    //     let actual = day21.find_direction_to_direction(&Direction::Activate, &Direction::Left);
-    //     assert_eq!(expected, actual);
-    // }
 
     #[test]
     fn test_individual_lines() {
@@ -458,24 +401,24 @@ mod tests {
             (
                 [0, 2, 9],
                 68 * 29,
-                "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A",
+                "029A = <vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A",
             ),
             (
                 [9, 8, 0],
                 60 * 980,
-                "Av<<A>>^AvA^Av<<A>>^AAv<A<A>>^AAvAA<^A>Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A",
+                "980A = Av<<A>>^AvA^Av<<A>>^AAv<A<A>>^AAvAA<^A>Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A",
             ),
-            ([1, 7, 9], 68 * 179, ""),
-            ([4, 5, 6], 64 * 456, ""),
+            ([1, 7, 9], 68 * 179, "179A = "),
+            ([4, 5, 6], 64 * 456, "456A = "),
             (
                 [3, 7, 9],
                 64 * 379,
-                "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
+                "379A = <v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
             ),
         ]
         .into_iter()
         {
-            let actual = day21.calculate_day_a_line(&number_map, &direction_map, &numbers, 0);
+            let actual = day21.calculate_line(&number_map, &direction_map, &numbers, 2);
             println!("Path is  {:?}", path);
             assert_eq!(actual, expected);
         }
@@ -492,7 +435,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day21 = Day21::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 154115708116294;
         let actual = day21.calculate_day_b();
         assert_eq!(expected, actual);
     }
@@ -508,7 +451,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day21 = Day21::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 341460772681012;
         let actual = day21.calculate_day_b();
         assert_eq!(expected, actual);
     }
