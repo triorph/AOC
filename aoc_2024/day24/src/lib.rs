@@ -79,7 +79,12 @@ impl Day24 {
             .fold(0, |acc, x| acc * 2 + x)
     }
 
-    fn build_expression(&self, output: &str) -> String {
+    fn build_expression(
+        &self,
+        output: &str,
+        equations: &HashMap<String, usize>,
+        indent_level: usize,
+    ) -> String {
         if self.initial_values.contains_key(output) {
             format!("{} ({})", output, self.initial_values.get(output).unwrap())
         } else {
@@ -88,16 +93,27 @@ impl Day24 {
                 .iter()
                 .find(|(_, _, _, out)| out == output)
                 .unwrap();
+            let tabs = "\t".repeat(indent_level);
+            let mut leftright = vec![
+                self.build_expression(&equation.0, equations, indent_level + 1),
+                self.build_expression(&equation.2, equations, indent_level + 1),
+            ];
+            leftright.sort();
             format!(
-                "({} {} {})",
-                self.build_expression(&equation.0),
+                "{}:\n\t{}{}\n\t{}{}\n{}{}({})",
                 equation.1,
-                self.build_expression(&equation.2)
+                tabs,
+                leftright[0],
+                tabs,
+                leftright[1],
+                tabs,
+                equation.3,
+                equations.get(&equation.3).unwrap()
             )
         }
     }
 
-    fn find_swap_pairs(&self) -> usize {
+    fn find_swap_pairs(&mut self) -> usize {
         // We want z[0]..z[n] to be the sum of x[0]..x[n-1] and y[0]..y[n-1]
         //
         // z[0] should be x[0] xor y[0]
@@ -107,20 +123,85 @@ impl Day24 {
         // the carry c[1] to be x[1] and y[1] or x[1] and c[0] or y[1] and c[0]
         //
         // Let's just start by printing the "expression" of each z entry and see what it looks like
-        for z_out in self
+        //
+        // and printing out when its wrong
+        //
+        // note: I kind of fucked up and got the right answer then used `git checkout --` to undo
+        // my input_data changes and lost all of my work here instead. Trying to reproduce:
+        //
+        // First incorrect is z07, which is just the AND value instead of doing the correct stuff
+        // looks like swt is correct for this
+        //
+        // Next incorrect is z13, which while not giving the wrong result, starts with an OR
+        // so is the carry. This needs to be swapped with pqc
+        //
+        // Next incorrect is z24, which is using the AND instead of the XOR of the input wires
+        // so we need to swap rjm with wsv
+        //
+        // Lastly we have z31, which is an AND instead of an XOR, and is representing its carry
+        // needs to be swapped with bgs
+        //
+        // The sorted list of wires is thus:
+        // bgs,pqc,rjm,swt,wsv,z07,z13,z31
+        self.swap_wires("z07", "swt");
+        self.swap_wires("z13", "pqc");
+        self.swap_wires("rjm", "wsv");
+        self.swap_wires("bgs", "z31");
+
+        let z = self.sum_x_and_y();
+        let equations = self.run_equations();
+        let mut sorted_z: Vec<String> = self
             .equations
             .iter()
-            .filter(|(_, _, _, out)| out.starts_with('z'))
-        {
-            println!("Finding equation for {}", z_out.3);
-            println!("{}", self.build_expression(&z_out.3));
+            .map(|(_, _, _, name)| name.clone())
+            .filter(|name| name.starts_with('z'))
+            .collect();
+        sorted_z.sort();
+        let mut found = true;
+        for z_out in sorted_z.into_iter() {
+            println!("Finding equation for {}", z_out);
+            let index = z_out[1..z_out.len()].parse::<usize>().unwrap();
+
+            if *equations.get(&z_out).unwrap() != (z >> index) % 2 {
+                println!("Value incorrect at: {}", z_out);
+                found = false;
+            } else {
+                println!("Value correct at: {}", z_out);
+            }
+            println!("{}", self.build_expression(&z_out, &equations, 0));
         }
+        assert!(found);
         0
     }
 
+    fn swap_wires(&mut self, a: &str, b: &str) {
+        for wire in self.equations.iter_mut() {
+            if wire.3 == a {
+                wire.3 = b.to_string();
+            } else if wire.3 == b {
+                wire.3 = a.to_string();
+            }
+        }
+    }
+
     fn calculate_day_b(&self) -> usize {
-        self.find_swap_pairs();
+        let mut obj = self.clone();
+        obj.find_swap_pairs();
         0
+    }
+
+    fn sum_x_and_y(&self) -> usize {
+        let mut x = 0;
+        let mut y = 0;
+        for (key, value) in self.initial_values.iter() {
+            let index = key[1..key.len()].parse::<usize>().unwrap();
+            if key.starts_with('x') {
+                x |= value << index
+            } else {
+                y |= value << index;
+            }
+        }
+        x + y
     }
 }
 
@@ -139,10 +220,11 @@ mod tests {
 
     #[test]
     fn test_calculate_day_b() {
-        let day24 = Day24::new("data/test_data.txt").unwrap();
-        let expected = 0;
-        let actual = day24.calculate_day_b();
-        assert_eq!(expected, actual);
+        //There is no test data for part b
+        // let day24 = Day24::new("data/test_data.txt").unwrap();
+        // let expected = 0;
+        // let actual = day24.calculate_day_b();
+        // assert_eq!(expected, actual);
     }
 
     #[test]
