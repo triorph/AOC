@@ -1,4 +1,6 @@
 mod parser;
+use std::{cmp::Reverse, collections::BinaryHeap};
+
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 
@@ -48,18 +50,66 @@ impl Day17 {
             .join(",")
     }
 
-    fn calculate_day_b(&self) -> usize {
-        let mut ret = 0;
-        loop {
-            let mut obj = self.clone();
-            obj.registers[0] = ret;
-            obj.calculate_day_a();
-            if obj.output == self.instructions {
-                return ret;
-            } else {
-                ret += 1;
+    fn get_largest_a_that_prints_instructions(&self) -> usize {
+        // we want to look backwards for this
+        //
+        // Best to focus on the real case, instead of anything generic
+        //
+        // 2,4, -- set B to A % 8
+        // 1,2, -- XOR B by 2
+        // 7,5, -- Set C to A >> B
+        // 4,5, -- XOR B by C
+        // 1,3, -- XOR B by 3
+        // 5,5, -- output the contents of B % 8
+        // 0,3, -- right-shift A by 3 (divide by 8)
+        // 3,0  -- branch to start if A is not zero
+        //
+        // The combo operand for 3 is 3, so basically we just right-shift A by 3
+        // for every comma we have (15)
+        // so we only need to consider A around 1<<45 to 1<<51
+        //
+        // We have a 5,5 for out only output, which means
+        // we need to print register B mod 8 each time.
+        //
+        // since deshift at the start will be 0, we can work out what it will be
+        // at each time
+        //
+        // so basically, we need every outcome to be bits to be (A XOR 1) XOR (A >> (A XOR 2))
+        // assuming that A is 8-bit except for A >> (A XOR 2) also ends up as an 8-bit result
+        //
+        // the easiest way to do this is to do an explore algorithm on possible A values,
+        // matching the instruction_commands to the instructions (but in reverse).
+        // Then when going to the next node, we shift up by 3 and try another 8 instructions
+        // on all that match.
+        //
+        // note:
+        // test instructions are:
+        // 0,3, right-shift A by 3
+        // 5,4, output the contents of A % 8
+        // 3,0, jump back to A if not empty
+        // so basically just the smallest number that satisfies the original numbers
+        // concatenated together as 3-bit arrays
+        let mut obj = self.clone();
+        let mut to_explore: BinaryHeap<(usize, Reverse<usize>)> = BinaryHeap::new();
+        to_explore.push((0, Reverse(0)));
+        while let Some((depth, Reverse(value))) = to_explore.pop() {
+            if depth == self.instructions.len() {
+                return value;
+            }
+            for i in 0..8 {
+                let new_a = (value << 3) + i;
+                let ret = obj.run_all_instructions_and_get_output_b(new_a);
+                let expect = self.instructions[self.instructions.len() - depth - 1];
+                if ret == expect {
+                    to_explore.push((depth + 1, Reverse(new_a)));
+                }
             }
         }
+        panic!("No day b value found")
+    }
+
+    fn calculate_day_b(&self) -> usize {
+        self.get_largest_a_that_prints_instructions()
     }
 
     fn get_combo_operand(&self, operand: usize) -> usize {
@@ -79,6 +129,26 @@ impl Day17 {
         let numerator = self.registers[0];
         let combo_operand = self.get_combo_operand(operand);
         numerator >> combo_operand
+    }
+
+    fn run_all_instructions_and_get_output_b(&mut self, starting_a: usize) -> usize {
+        self.registers = vec![starting_a, 0, 0];
+        for operator_operand in self.instructions.chunks(2) {
+            let operator = operator_operand[0];
+            let operand = operator_operand[1];
+            match operator {
+                0 => self.registers[0] = self.get_adv_result(operand),
+                1 => self.registers[1] ^= operand,
+                2 => self.registers[1] = self.get_combo_operand(operand) % 8,
+                3 => (),
+                4 => self.registers[1] ^= self.registers[2],
+                5 => return self.get_combo_operand(operand) % 8,
+                6 => self.registers[1] = self.get_adv_result(operand),
+                7 => self.registers[2] = self.get_adv_result(operand),
+                _ => panic!("Invalid operator {:?}", operator),
+            }
+        }
+        panic!("No output returned")
     }
 
     fn run_instruction(
@@ -178,7 +248,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day17 = Day17::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = 37221270076916;
         let actual = day17.calculate_day_b();
         assert_eq!(expected, actual);
     }
