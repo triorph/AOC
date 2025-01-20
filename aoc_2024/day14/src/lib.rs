@@ -1,18 +1,21 @@
 mod parser;
+use std::collections::HashSet;
+
 use crate::parser::parse_data;
-use aoc_helpers::{point2d::Point2D, read_input_file, AOCFileOrParseError};
+use aoc_helpers::{hash_utils::FromVec, point2d::Point2D, read_input_file, AOCFileOrParseError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day14 {
-    robots: Vec<(Point2D, Point2D)>,
+    robots: HashSet<(Point2D, Point2D)>,
     width: isize,
     height: isize,
 }
 
 impl Day14 {
     pub fn new(filename: &str, width: isize, height: isize) -> Result<Day14, AOCFileOrParseError> {
+        let robots = parse_data(&read_input_file(filename)?)?;
         Ok(Day14 {
-            robots: parse_data(&read_input_file(filename)?)?,
+            robots: HashSet::from_vec(&robots),
             width,
             height,
         })
@@ -35,11 +38,14 @@ impl Day14 {
         )
     }
 
-    fn next_moved_robots(&self, robots: &[(Point2D, Point2D)]) -> Vec<(Point2D, Point2D)> {
+    fn next_moved_robots(
+        &self,
+        robots: &HashSet<(Point2D, Point2D)>,
+    ) -> HashSet<(Point2D, Point2D)> {
         robots.iter().map(|robot| self.moved_robot(robot)).collect()
     }
 
-    fn calculate_score(&self, robots: &[(Point2D, Point2D)]) -> usize {
+    fn calculate_score(&self, robots: &HashSet<(Point2D, Point2D)>) -> usize {
         let quadrants = [
             (0..self.width / 2, 0..self.height / 2),
             ((self.width / 2 + 1)..self.width, 0..self.height / 2),
@@ -67,7 +73,8 @@ impl Day14 {
         self.calculate_score(&moved_robots)
     }
 
-    fn print_robots(&self, robots: &[(Point2D, Point2D)]) -> String {
+    #[allow(dead_code)]
+    fn print_robots(&self, robots: &HashSet<(Point2D, Point2D)>) -> String {
         let mut ret = String::new();
         for y in 0..self.height {
             for x in 0..self.width {
@@ -82,14 +89,23 @@ impl Day14 {
         ret
     }
 
+    fn is_tree(&self, robots: &HashSet<(Point2D, Point2D)>) -> bool {
+        for (point, _) in robots.iter() {
+            if (1..7).all(|x| {
+                robots
+                    .iter()
+                    .any(|(other_p, _)| point.x + x == other_p.x && point.y == other_p.y)
+            }) {
+                return true;
+            }
+        }
+        false
+    }
+
     fn calculate_day_b(&self) -> usize {
         let mut robots = self.robots.clone();
         for i in 0..10000 {
-            let robot_str = self.print_robots(&robots);
-            if robot_str.contains("#########") {
-                println!("Tree :");
-                println!("{}", self.print_robots(&robots));
-                println!();
+            if self.is_tree(&robots) {
                 return i;
             }
             robots = self.next_moved_robots(&robots);

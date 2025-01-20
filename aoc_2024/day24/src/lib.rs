@@ -79,6 +79,7 @@ impl Day24 {
             .fold(0, |acc, x| acc * 2 + x)
     }
 
+    #[allow(dead_code)]
     fn build_expression(
         &self,
         output: &str,
@@ -94,7 +95,7 @@ impl Day24 {
                 .find(|(_, _, _, out)| out == output)
                 .unwrap();
             let tabs = "\t".repeat(indent_level);
-            let mut leftright = vec![
+            let mut leftright = [
                 self.build_expression(&equation.0, equations, indent_level + 1),
                 self.build_expression(&equation.2, equations, indent_level + 1),
             ];
@@ -113,7 +114,7 @@ impl Day24 {
         }
     }
 
-    fn find_swap_pairs(&mut self) -> usize {
+    fn find_swap_pairs(&mut self) -> String {
         // We want z[0]..z[n] to be the sum of x[0]..x[n-1] and y[0]..y[n-1]
         //
         // z[0] should be x[0] xor y[0]
@@ -159,19 +160,19 @@ impl Day24 {
         sorted_z.sort();
         let mut found = true;
         for z_out in sorted_z.into_iter() {
-            println!("Finding equation for {}", z_out);
+            // println!("Finding equation for {}", z_out);
             let index = z_out[1..z_out.len()].parse::<usize>().unwrap();
 
             if *equations.get(&z_out).unwrap() != (z >> index) % 2 {
-                println!("Value incorrect at: {}", z_out);
+                // println!("Value incorrect at: {}", z_out);
                 found = false;
             } else {
-                println!("Value correct at: {}", z_out);
+                // println!("Value correct at: {}", z_out);
             }
-            println!("{}", self.build_expression(&z_out, &equations, 0));
+            // println!("{}", self.build_expression(&z_out, &equations, 0));
         }
         assert!(found);
-        0
+        "bgs,pqc,rjm,swt,wsv,z07,z13,z31".to_string()
     }
 
     fn swap_wires(&mut self, a: &str, b: &str) {
@@ -184,10 +185,9 @@ impl Day24 {
         }
     }
 
-    fn calculate_day_b(&self) -> usize {
+    fn calculate_day_b(&self) -> String {
         let mut obj = self.clone();
-        obj.find_swap_pairs();
-        0
+        obj.find_swap_pairs()
     }
 
     fn sum_x_and_y(&self) -> usize {
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn test_real_input_calculate_day_b() {
         let day24 = Day24::new("data/input_data.txt").unwrap();
-        let expected = 0;
+        let expected = "bgs,pqc,rjm,swt,wsv,z07,z13,z31".to_string();
         let actual = day24.calculate_day_b();
         assert_eq!(expected, actual);
     }

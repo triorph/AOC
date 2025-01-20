@@ -4,20 +4,20 @@ use day1::Day01;
 use day10::Day10;
 use day11::Day11;
 use day12::Day12;
-// use day13::Day13;
-// use day14::Day14;
-// use day15::Day15;
-// use day16::Day16;
-// use day17::Day17;
-// use day18::Day18;
-// use day19::Day19;
+use day13::Day13;
+use day14::Day14;
+use day15::Day15;
+use day16::Day16;
+use day17::Day17;
+use day18::Day18;
+use day19::Day19;
 use day2::Day2;
-// use day20::Day20;
-// use day21::Day21;
-// use day22::Day22;
-// use day23::Day23;
-// use day24::Day24;
-// use day25::Day25;
+use day20::Day20;
+use day21::Day21;
+use day22::Day22;
+use day23::Day23;
+use day24::Day24;
+use day25::Day25;
 use day3::Day3;
 use day4::Day4;
 use day5::Day5;
@@ -26,11 +26,10 @@ use day7::Day7;
 use day8::Day8;
 use day9::Day9;
 
-const ALL_CURRENT_DAYS: [&str; 12] = [
+const ALL_CURRENT_DAYS: [&str; 25] = [
     "day1", "day2", "day3", "day4", "day5", "day6", "day7", "day8", "day9", "day10", "day11",
-    "day12", // "day13", "day14", "day15", "day16",
-            // "day17", // "day18", "day19", "day20", "day21",
-            // "day22", "day23", "day24", "day25",
+    "day12", "day13", "day14", "day15", "day16", "day17", "day18", "day19", "day20", "day21",
+    "day22", "day23", "day24", "day25",
 ];
 
 fn run_day_if_enabled(day: Box<dyn AOCCalculator>, name: &str, allowed_days: &[String]) {
@@ -112,70 +111,66 @@ fn main() -> Result<()> {
         "day12",
         &allowed_days,
     );
-    // run_day_if_enabled(
-    //     Box::new(Day13::new("day13/data/input_data.txt")?),
-    //     "day13",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day14::new("day14/data/input_data.txt")?),
-    //     "day14",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day15::new("day15/data/input_data.txt")?),
-    //     "day15",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day16::new("day16/data/input_data.txt")?),
-    //     "day16",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day17::new("day17/data/input_data.txt")?),
-    //     "day17",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day18::new("day18/data/input_data.txt")?),
-    //     "day18",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day19::new("day19/data/input_data.txt")?),
-    //     "day19",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day20::new("day20/data/input_data.txt")?),
-    //     "day20",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day21::new("day21/data/input_data.txt")?),
-    //     "day21",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day22::new("day22/data/input_data.txt")?),
-    //     "day22",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day23::new("day23/data/input_data.txt")?),
-    //     "day23",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day24::new("day24/data/input_data.txt")?),
-    //     "day24",
-    //     &allowed_days,
-    // );
-    // run_day_if_enabled(
-    //     Box::new(Day25::new("day25/data/input_data.txt")?),
-    //     "day25",
-    //     &allowed_days,
-    // );
+    run_day_if_enabled(
+        Box::new(Day13::new("day13/data/input_data.txt")?),
+        "day13",
+        &allowed_days,
+    );
+    Day14::new("day14/data/input_data.txt", 101, 103)?.print_results("day14");
+    run_day_if_enabled(
+        Box::new(Day15::new("day15/data/input_data.txt")?),
+        "day15",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day16::new("day16/data/input_data.txt")?),
+        "day16",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day17::new("day17/data/input_data.txt")?),
+        "day17",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day18::new("day18/data/input_data.txt")?),
+        "day18",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day19::new("day19/data/input_data.txt")?),
+        "day19",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day20::new("day20/data/input_data.txt")?),
+        "day20",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day21::new("day21/data/input_data.txt")?),
+        "day21",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day22::new("day22/data/input_data.txt")?),
+        "day22",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day23::new("day23/data/input_data.txt")?),
+        "day23",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day24::new("day24/data/input_data.txt")?),
+        "day24",
+        &allowed_days,
+    );
+    run_day_if_enabled(
+        Box::new(Day25::new("day25/data/input_data.txt")?),
+        "day25",
+        &allowed_days,
+    );
     Ok(())
 }

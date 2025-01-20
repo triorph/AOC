@@ -77,7 +77,6 @@ impl Day22 {
                 *quantities.entry(k).or_default() += v;
             }
         }
-        println!("{:?}", quantities.get(&[-3, 0, 4, 0]));
         *quantities.values().max().unwrap()
     }
 }

@@ -37,7 +37,6 @@ impl Day13 {
                 && difference.y % claw_machine.1.y == 0
             {
                 let other = difference.x / claw_machine.1.x;
-                println!("a, b is valid, {:?}", (i, other));
                 if !(0..=limit).contains(&other) {
                     continue;
                 }
@@ -50,7 +49,6 @@ impl Day13 {
                 }
             }
         }
-        println!("a, b are {:?}", ret);
         ret
     }
 
@@ -96,7 +94,6 @@ impl Day13 {
         let y_b = claw_machine.1.y as f64;
         let y_c = (claw_machine.2 + *offset).y as f64;
         let matrix = self.gaussian_elimination(vec![vec![x_a, x_b, x_c], vec![y_a, y_b, y_c]]);
-        println!("Matrix is {:?}", matrix);
         let a = matrix[0][2];
         let b = matrix[1][2];
         if (a.round() - a).abs() < 0.01
