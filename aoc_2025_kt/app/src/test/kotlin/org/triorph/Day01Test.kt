@@ -1,18 +1,18 @@
 package org.triorph
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import io.kotest.matchers.shouldBe
+import kotlin.test.Test
 
 class Day01Test {
     @Test
     fun `Test day01 part A result`() {
         val day01 = Day01()
-        assertEquals(day01.calculatePartA(), 0, "App should return a result")
+        day01.calculatePartA() shouldBe 0
     }
 
     @Test
     fun `Test day01 part B result`() {
         val day01 = Day01()
-        assertEquals(day01.calculatePartB(), 0, "App should return a result")
+        day01.calculatePartB() shouldBe 0
     }
 }

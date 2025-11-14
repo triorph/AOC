@@ -19,8 +19,15 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-    testImplementation(libs.junit.jupiter)
+    val kotestVersion = "5.7.2"
+    // Use the Kotlin Test integration.
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+
+    // Use the JUnit 5 integration.
+    testImplementation(libs.junit.jupiter.engine)
+
+    // use kotest for assertions
+    testImplementation("io.kotest:kotest-property:$kotestVersion")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
@@ -40,21 +47,15 @@ application {
     mainClass = "org.triorph.AppKt"
 }
 
-tasks.named<Test>("test") {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
-    testLogging {
-        showStandardStreams = true
-        afterSuite(
-            KotlinClosure2<TestDescriptor, TestResult, Unit>({ desc, result ->
-                println(
-                    "Results: " +
-                        "${result.resultType} " +
-                        "(${result.successfulTestCount} successes, " +
-                        "${result.failedTestCount} failures, " +
-                        "${result.skippedTestCount} skipped)",
-                )
-            }),
-        )
+tasks {
+    test {
+        // Use JUnit Platform for unit tests.
+        useJUnitPlatform()
+        testLogging {
+            events("standardOut", "standardError", "passed", "skipped", "failed")
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            showExceptions = true
+            showStandardStreams = true
+        }
     }
 }

@@ -1,11 +1,11 @@
 package org.triorph
 
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
+import kotlin.test.assertNotNull
 
 class AppTest {
     @Test
-    fun appHasAGreeting() {
+    fun appHasAResult() {
         val classUnderTest = App()
         assertNotNull(classUnderTest.runAllDays(), "App should return a result")
     }
