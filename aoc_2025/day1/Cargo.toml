@@ -1,5 +1,5 @@
 [package]
-name = "skeleton"
+name = "day1"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 peg = "0.8.5"
-aoc_helpers = { path = "../aoc_helpers" }
 color-eyre = "0.6.5"
+aoc_helpers = { path = "../aoc_helpers" }
 
 [dev-dependencies]
 rstest = "0.26.1"
