@@ -1,8 +1,7 @@
 mod parser;
 use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
-use fancy_regex::Regex;
-use std::ops::Range;
+use std::{collections::HashSet, ops::Range};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day2 {
@@ -23,18 +22,63 @@ impl AOCCalculator for Day2 {
 }
 
 impl Day2 {
-    fn find_invalid_ids_in_range_a(&self, range: &Range<usize>) -> Vec<usize> {
-        let re = Regex::new(r"^(.+)(\1)$").unwrap();
-        (range.start..=range.end)
-            .filter(|value| re.is_match(&value.to_string()).unwrap_or(false))
+    fn find_invalid_ids_in_range_a(&self, range: &Range<usize>) -> HashSet<usize> {
+        self.find_invalid_ids_with_divisor(&range.start.to_string(), &range.end.to_string(), 2)
+            .into_iter()
+            .filter(|value| (range.start..=range.end).contains(value))
             .collect()
     }
 
-    fn find_invalid_ids_in_range_b(&self, range: &Range<usize>) -> Vec<usize> {
-        let re = Regex::new(r"^(.+)(\1+)$").unwrap();
-        (range.start..=range.end)
-            .filter(|value| re.is_match(&value.to_string()).unwrap_or(false))
-            .collect()
+    fn build_segments(
+        &self,
+        start_segment: &str,
+        end_segment: &str,
+        divisor: usize,
+    ) -> HashSet<usize> {
+        (start_segment.parse::<usize>().unwrap()..=end_segment.parse::<usize>().unwrap())
+            .map(|segment| segment.to_string().repeat(divisor))
+            .map(|value_str| value_str.parse::<usize>().unwrap())
+            .collect::<HashSet<usize>>()
+    }
+
+    fn find_invalid_ids_with_divisor(
+        &self,
+        range_start_str: &str,
+        range_end_str: &str,
+        divisor: usize,
+    ) -> HashSet<usize> {
+        if range_end_str.len() % divisor != 0 && range_start_str.len() % divisor != 0 {
+            HashSet::new()
+        } else if range_start_str.len() % divisor != 0 {
+            let start_segment = if range_start_str.len() == range_end_str.len() {
+                range_start_str[0..range_start_str.len() / divisor].to_string()
+            } else {
+                // Set to "100" if start value is "98" and end value is "110"
+                "1".to_string() + &"0".to_string().repeat(range_end_str.len() / divisor - 1)
+            };
+            let end_segment = range_end_str[0..range_end_str.len() / divisor].to_string();
+            self.build_segments(&start_segment, &end_segment, divisor)
+        } else {
+            let start_segment = range_start_str[0..range_start_str.len() / divisor].to_string();
+            let end_segment = if range_start_str.len() == range_end_str.len() {
+                range_end_str[0..range_end_str.len() / divisor].to_string()
+            } else {
+                // set end to "999" start value is "920" and end value is "1100"
+                "9".to_string().repeat(range_start_str.len() / divisor)
+            };
+            self.build_segments(&start_segment, &end_segment, divisor)
+        }
+    }
+
+    fn find_invalid_ids_in_range_b(&self, range: &Range<usize>) -> HashSet<usize> {
+        let range_start_str = range.start.to_string();
+        let range_end_str = range.end.to_string();
+        (2..=(range_end_str.len()))
+            .flat_map(|divisor| {
+                self.find_invalid_ids_with_divisor(&range_start_str, &range_end_str, divisor)
+            })
+            .filter(|value| (range.start..=range.end).contains(value))
+            .collect::<HashSet<usize>>()
     }
 
     fn calculate_day_a(&self) -> usize {
@@ -108,10 +152,9 @@ mod tests {
         #[case] expected: usize,
     ) {
         let day2 = Day2::new("data/test_data.txt").unwrap();
-        let actual = day2
-            .find_invalid_ids_in_range_b(&(start..end))
-            .into_iter()
-            .sum();
+        let actual_ids = day2.find_invalid_ids_in_range_b(&(start..end));
+        println!("Returned IDs {:?}", actual_ids);
+        let actual = actual_ids.into_iter().sum();
         assert_eq!(expected, actual);
     }
 

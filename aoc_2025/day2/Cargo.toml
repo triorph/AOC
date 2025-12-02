@@ -9,7 +9,6 @@ edition = "2021"
 peg = "0.8.5"
 aoc_helpers = { path = "../aoc_helpers" }
 color-eyre = "0.6.5"
-fancy-regex = "0.16.2"
 
 [dev-dependencies]
 rstest = "0.26.1"
