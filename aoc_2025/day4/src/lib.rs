@@ -36,11 +36,11 @@ impl Day4 {
                 paper_location
                     .get_8_neighbours()
                     .into_iter()
-                    .filter(|neighbour_location| self.paper_locations.contains(neighbour_location))
+                    .filter(|neighbour_location| paper_locations.contains(neighbour_location))
                     .count()
                     < 4
             })
-            .cloned()
+            .copied()
             .collect()
     }
 
@@ -55,7 +55,7 @@ impl Day4 {
     ) -> HashSet<Point2D> {
         paper_locations
             .difference(&self.find_moveable_paper_locations(paper_locations))
-            .cloned()
+            .copied()
             .collect()
     }
 
