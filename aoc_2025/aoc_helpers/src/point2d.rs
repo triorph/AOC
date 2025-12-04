@@ -1,7 +1,9 @@
 use std::{
     fmt::Debug,
-    ops::{Add, Mul, Sub},
+    ops::{Add, Mul, Range, Sub},
 };
+
+use itertools::Itertools;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub struct Point2D {
@@ -17,6 +19,7 @@ impl Debug for Point2D {
 
 pub trait Neighbours {
     fn get_neighbours(&self) -> Vec<Point2D>;
+    fn get_8_neighbours(&self) -> Vec<Point2D>;
 }
 
 impl Neighbours for Point2D {
@@ -26,6 +29,19 @@ impl Neighbours for Point2D {
             self + &Point2D { x: 0, y: 1 },
             self + &Point2D { x: -1, y: 0 },
             self + &Point2D { x: 1, y: 0 },
+        ]
+    }
+
+    fn get_8_neighbours(&self) -> Vec<Point2D> {
+        vec![
+            self + &Point2D { x: -1, y: -1 },
+            self + &Point2D { x: 0, y: -1 },
+            self + &Point2D { x: 1, y: -1 },
+            self + &Point2D { x: -1, y: 0 },
+            self + &Point2D { x: 1, y: 0 },
+            self + &Point2D { x: -1, y: 1 },
+            self + &Point2D { x: 0, y: 1 },
+            self + &Point2D { x: 1, y: 1 },
         ]
     }
 }
@@ -40,6 +56,20 @@ impl Point2D {
 
     pub fn get_manhattan_distance(&self, other: &Point2D) -> usize {
         ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
+    }
+
+    pub fn iterate_x_y(x_range: Range<isize>, y_range: Range<isize>) -> Vec<Point2D> {
+        x_range
+            .cartesian_product(y_range)
+            .map(|(x, y)| Point2D { x, y })
+            .collect()
+    }
+
+    pub fn iterate_x_y_usize(x_range: Range<usize>, y_range: Range<usize>) -> Vec<Point2D> {
+        x_range
+            .cartesian_product(y_range)
+            .map(|(x, y)| Point2D::from_usize(x, y))
+            .collect()
     }
 }
 
