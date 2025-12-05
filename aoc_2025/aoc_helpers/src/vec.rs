@@ -1,3 +1,21 @@
+pub trait Concatable<T> {
+    fn concat(self, other: Self) -> Self;
+    fn concat_element(self, other: T) -> Self;
+}
+
+impl<T> Concatable<T> for Vec<T>
+where
+    T: Clone,
+{
+    fn concat(self, other: Self) -> Self {
+        [self, other].concat()
+    }
+
+    fn concat_element(self, other: T) -> Self {
+        [self, vec![other]].concat()
+    }
+}
+
 pub trait Rotatable<T> {
     fn rot90(&self) -> Vec<Vec<T>>;
     fn rot270(&self) -> Vec<Vec<T>>;
@@ -127,5 +145,19 @@ mod test {
         let expected = vec![vec![6, 5, 4], vec![3, 2, 1]];
         let slice: &[Vec<i32>] = &input as &[Vec<i32>];
         assert_eq!(slice.rot180(), expected);
+    }
+
+    #[test]
+    fn test_concatable() {
+        let actual = vec!["1", "2", "3"].concat(vec!["3", "4", "5"]);
+        let expected = vec!["1", "2", "3", "3", "4", "5"];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_concatable_element() {
+        let actual = vec!["1", "2", "3"].concat_element("4");
+        let expected = vec!["1", "2", "3", "4"];
+        assert_eq!(actual, expected);
     }
 }
