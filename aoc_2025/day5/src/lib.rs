@@ -1,5 +1,7 @@
+mod ingredient_range;
 mod parser;
-use crate::parser::{parse_data, IngredientRange};
+use crate::ingredient_range::{IngredientRange, RangeOverlaps};
+use crate::parser::parse_data;
 use aoc_helpers::{read_input_file, vec::Concatable, AOCCalculator, AOCFileOrParseError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,31 +23,6 @@ impl AOCCalculator for Day5 {
     fn print_results(&self, name: &str) {
         println!("{}a answer is {:?}", name, self.calculate_day_a());
         println!("{}b answer is {:?}", name, self.calculate_day_b());
-    }
-}
-
-trait RangeOverlaps {
-    fn overlaps(&self, other: &Self) -> bool;
-
-    fn overlap(&self, other: &Self) -> Self;
-
-    fn len(&self) -> usize;
-}
-
-impl RangeOverlaps for IngredientRange {
-    fn overlaps(&self, other: &IngredientRange) -> bool {
-        other.contains(self.start())
-            || other.contains(self.end())
-            || self.contains(other.start())
-            || self.contains(other.end())
-    }
-
-    fn overlap(&self, other: &IngredientRange) -> IngredientRange {
-        (*self.start().min(other.start()))..=(*self.end().max(other.end()))
-    }
-
-    fn len(&self) -> usize {
-        self.end() - self.start() + 1
     }
 }
 
@@ -75,7 +52,10 @@ impl Day5 {
             .filter(|range| range.overlaps(to_combine))
             .fold(
                 to_combine.clone(),
-                |acc: IngredientRange, x: &IngredientRange| acc.overlap(x),
+                |acc: IngredientRange, x: &IngredientRange| {
+                    acc.overlap(x)
+                        .expect("Already filtered on overlapped values")
+                },
             );
         unchanged.concat_element(combined_range)
     }

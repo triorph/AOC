@@ -1,12 +1,10 @@
 extern crate peg;
+use crate::ingredient_range::IngredientRange;
 use aoc_helpers::AOCFileOrParseError;
-use std::ops::RangeInclusive;
-
-pub type IngredientRange = RangeInclusive<usize>;
 
 peg::parser! { pub grammar day5_parser() for str {
     rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
+        = n:$(['0'..='9']+) { n.parse().unwrap_or_else(|_| panic!("Was expecting a number string {}", n))}
     rule range() -> IngredientRange
         = start:number() "-" end:number() { start..=end }
     rule ranges() -> Vec<IngredientRange>

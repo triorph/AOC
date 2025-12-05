@@ -3,7 +3,7 @@ use aoc_helpers::AOCFileOrParseError;
 
 peg::parser! { pub grammar skeleton_parser() for str {
     rule number() -> usize
-        = n:$(['0'..='9']+) { n.parse().expect(&format!("Was expecting a number string {}", n)[..])}
+        = n:$(['0'..='9']+) { n.parse().unwrap_or_else(|_| panic!("Was expecting a number string {}", n))}
     pub rule parse() -> Vec<usize>
         = lines:number() ++ ("\n" +) "\n" * { lines }
 }}
