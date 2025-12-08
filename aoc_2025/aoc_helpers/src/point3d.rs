@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub struct Point3D {
     pub x: isize,
     pub y: isize,
@@ -46,6 +46,11 @@ impl Point3D {
         (self.x - other.x).unsigned_abs()
             + (self.y - other.y).unsigned_abs()
             + (self.z - other.z).unsigned_abs()
+    }
+
+    pub fn get_euclidean_distance(&self, other: &Point3D) -> f64 {
+        (((self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)) as f64)
+            .powf(0.5)
     }
 }
 
