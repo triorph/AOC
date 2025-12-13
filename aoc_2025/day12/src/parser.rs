@@ -52,8 +52,61 @@ mod test {
         let input_str = read_input_file("data/test_data.txt").unwrap();
         let (actual_presents, actual_goals) =
             day12_parser::parse(&input_str).expect("Should parse successfully");
-        let expected_presents: Vec<Present> = vec![];
-        let expected_goals: Vec<Goal> = vec![];
+        let expected_presents: Vec<Present> = vec![
+            (
+                0,
+                vec![
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                ],
+            ),
+            (
+                1,
+                vec![
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                    vec![PresentTile::Empty, PresentTile::Full, PresentTile::Full],
+                ],
+            ),
+            (
+                2,
+                vec![
+                    vec![PresentTile::Empty, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                ],
+            ),
+            (
+                3,
+                vec![
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Empty],
+                ],
+            ),
+            (
+                4,
+                vec![
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Full, PresentTile::Empty, PresentTile::Empty],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                ],
+            ),
+            (
+                5,
+                vec![
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                    vec![PresentTile::Empty, PresentTile::Full, PresentTile::Empty],
+                    vec![PresentTile::Full, PresentTile::Full, PresentTile::Full],
+                ],
+            ),
+        ];
+        let expected_goals: Vec<Goal> = vec![
+            (4, 4, vec![0, 0, 0, 0, 2, 0]),
+            (12, 5, vec![1, 0, 1, 0, 2, 2]),
+            (12, 5, vec![1, 0, 1, 0, 3, 2]),
+        ];
         assert_eq!(expected_presents, actual_presents);
         assert_eq!(expected_goals, actual_goals);
     }

@@ -2,7 +2,7 @@ mod parser;
 use crate::parser::{parse_data, Machine};
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use itertools::Itertools;
-use z3::{ast::Int, Optimize, Solver};
+use z3::{ast::Int, Optimize};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day10 {
@@ -123,21 +123,23 @@ impl Day10 {
     ///
     ///  gives us values: [3.286, 3.790, 1.860, 2.27]
     ///
-    fn per_machine_solve_part_b(&self, machine: &Machine) -> usize {
+    #[allow(dead_code)]
+    fn per_machine_solve_part_b(&self, _machine: &Machine) -> usize {
         0
     }
 
     fn per_machine_solve_part_b_z3(&self, machine: &Machine) -> usize {
         let (_, buttons, targets) = machine;
-        let solver = Solver::new();
+        // the number of times we press each button
         let variables: Vec<Int> = (0..buttons.len())
             .map(|i| Int::fresh_const(&format!("s{}", i)))
             .collect();
         let optimize = Optimize::new();
-        let ret = Int::fresh_const("ret");
+        // we cannot negative press buttons
         for variable in variables.iter() {
             optimize.assert(&variable.ge(0));
         }
+        // assert that button presses give our targets
         for (i, target) in targets.iter().enumerate() {
             optimize.assert(
                 &buttons
@@ -149,9 +151,14 @@ impl Day10 {
                     .eq(Int::from_u64(*target as u64)),
             )
         }
+        // the goal we minimise towards
+        let ret = Int::fresh_const("ret");
+        // assert that our goal is the sum of all the button presses
         optimize.assert(&variables.iter().sum::<Int>().eq(&ret));
+        // minimise
         optimize.minimize(&ret);
         optimize.check(&[]);
+        // retrieve the result
         let model = optimize.get_model().unwrap();
         model.get_const_interp(&ret).unwrap().as_u64().unwrap() as usize
     }
