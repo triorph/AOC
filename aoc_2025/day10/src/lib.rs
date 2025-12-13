@@ -2,6 +2,7 @@ mod parser;
 use crate::parser::{parse_data, Machine};
 use aoc_helpers::{read_input_file, AOCCalculator, AOCFileOrParseError};
 use itertools::Itertools;
+use z3::{ast::Int, Optimize, Solver};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Day10 {
@@ -32,7 +33,7 @@ impl Day10 {
     fn calculate_day_b(&self) -> usize {
         self.machines
             .iter()
-            .map(|machine| self.per_machine_solve_part_b(machine))
+            .map(|machine| self.per_machine_solve_part_b_z3(machine))
             .sum()
     }
 
@@ -125,6 +126,35 @@ impl Day10 {
     fn per_machine_solve_part_b(&self, machine: &Machine) -> usize {
         0
     }
+
+    fn per_machine_solve_part_b_z3(&self, machine: &Machine) -> usize {
+        let (_, buttons, targets) = machine;
+        let solver = Solver::new();
+        let variables: Vec<Int> = (0..buttons.len())
+            .map(|i| Int::fresh_const(&format!("s{}", i)))
+            .collect();
+        let optimize = Optimize::new();
+        let ret = Int::fresh_const("ret");
+        for variable in variables.iter() {
+            optimize.assert(&variable.ge(0));
+        }
+        for (i, target) in targets.iter().enumerate() {
+            optimize.assert(
+                &buttons
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, button)| button.contains(&i))
+                    .map(|(var_index, _)| &variables[var_index])
+                    .sum::<Int>()
+                    .eq(Int::from_u64(*target as u64)),
+            )
+        }
+        optimize.assert(&variables.iter().sum::<Int>().eq(&ret));
+        optimize.minimize(&ret);
+        optimize.check(&[]);
+        let model = optimize.get_model().unwrap();
+        model.get_const_interp(&ret).unwrap().as_u64().unwrap() as usize
+    }
 }
 
 #[cfg(test)]
@@ -143,7 +173,7 @@ mod tests {
     #[test]
     fn test_calculate_day_b() {
         let day10 = Day10::new("data/test_data.txt").unwrap();
-        let expected = 0;
+        let expected = 33;
         let actual = day10.calculate_day_b();
         assert_eq!(expected, actual);
     }
