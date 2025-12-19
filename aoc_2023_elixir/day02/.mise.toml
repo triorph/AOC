@@ -1,0 +1,4 @@
+[tools]
+erlang = "latest"
+elixir = "latest"
+direnv = "latest"
